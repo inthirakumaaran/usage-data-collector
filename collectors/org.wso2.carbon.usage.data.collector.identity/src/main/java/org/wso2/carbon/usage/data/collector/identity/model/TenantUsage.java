@@ -24,7 +24,6 @@ package org.wso2.carbon.usage.data.collector.identity.model;
 public class TenantUsage {
 
     private String tenantDomain;
-    private int b2bOrgCount;
     private int userCount;
 
     public TenantUsage() {
@@ -38,7 +37,6 @@ public class TenantUsage {
     public TenantUsage(String tenantDomain, int b2bOrgCount, int userCount) {
 
         this.tenantDomain = tenantDomain;
-        this.b2bOrgCount = b2bOrgCount;
         this.userCount = userCount;
     }
 
@@ -50,16 +48,6 @@ public class TenantUsage {
     public void setTenantDomain(String tenantDomain) {
 
         this.tenantDomain = tenantDomain;
-    }
-
-    public int getB2bOrgCount() {
-
-        return b2bOrgCount;
-    }
-
-    public void setB2bOrgCount(int b2bOrgCount) {
-
-        this.b2bOrgCount = b2bOrgCount;
     }
 
     public int getUserCount() {
@@ -77,7 +65,6 @@ public class TenantUsage {
 
         return "TenantUsage{" +
                 "tenantDomain='" + tenantDomain + '\'' +
-                ", b2bOrgCount=" + b2bOrgCount +
                 ", userCount=" + userCount +
                 '}';
     }

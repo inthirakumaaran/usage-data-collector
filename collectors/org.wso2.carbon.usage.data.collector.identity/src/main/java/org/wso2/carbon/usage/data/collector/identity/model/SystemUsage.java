@@ -24,7 +24,6 @@ package org.wso2.carbon.usage.data.collector.identity.model;
 public class SystemUsage {
 
     private int rootTenantCount;
-    private int totalB2BOrganizations;
     private int totalUsers;
 
     public int getRootTenantCount() {
@@ -35,16 +34,6 @@ public class SystemUsage {
     public void setRootTenantCount(int rootTenantCount) {
 
         this.rootTenantCount = rootTenantCount;
-    }
-
-    public int getTotalB2BOrganizations() {
-
-        return totalB2BOrganizations;
-    }
-
-    public void setTotalB2BOrganizations(int totalB2BOrganizations) {
-
-        this.totalB2BOrganizations = totalB2BOrganizations;
     }
 
     public int getTotalUsers() {
@@ -62,7 +51,6 @@ public class SystemUsage {
 
         return "SystemUsage{" +
                 "rootTenantCount=" + rootTenantCount +
-                ", totalB2BOrganizations=" + totalB2BOrganizations +
                 ", totalUsers=" + totalUsers +
                 '}';
     }

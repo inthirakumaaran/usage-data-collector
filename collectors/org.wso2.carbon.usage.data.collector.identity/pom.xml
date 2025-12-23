@@ -56,12 +56,6 @@
             <version>${carbon.kernel.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.wso2.carbon.identity.organization.management.core</groupId>
-            <artifactId>org.wso2.carbon.identity.organization.management.service</artifactId>
-            <version>${identity.organization.management.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>org.wso2.carbon.identity.framework</groupId>
             <artifactId>org.wso2.carbon.identity.core</artifactId>
             <scope>provided</scope>
@@ -176,9 +170,6 @@
                             org.wso2.carbon.identity.core; version="${identity.framework.version.range}",
                             org.wso2.carbon.identity.core.util; version="${identity.framework.version.range}",
 
-                            <!-- Identity Organization Management -->
-                            org.wso2.carbon.identity.organization.management.service; version="${org.wso2.carbon.identity.organization.management.core.version.range}",
-
                             <!-- Usage Data Collector Common -->
                             org.wso2.carbon.usage.data.collector.common.publisher.api; version="${project.version}",
                             org.wso2.carbon.usage.data.collector.common.publisher.api.model; version="${project.version}",
@@ -225,9 +216,8 @@
         <carbon.kernel.version.range>[4.0.0,5.0.0)</carbon.kernel.version.range>
         <apache.common.collections4.version>4.4.wso2v1</apache.common.collections4.version>
         <apache.common.collection.version>3.2.0.wso2v1</apache.common.collection.version>
-        <identity.organization.management.version>1.1.56</identity.organization.management.version>
         <identity.framework.version>7.8.586</identity.framework.version>
-        <identity.framework.version.range>[7.0.0,8.0.0)</identity.framework.version.range>
+        <identity.framework.version.range>[5.0.0,8.0.0)</identity.framework.version.range>
         <axis2.osgi.version.range>[1.6.1.wso2v76, 2.0.0)</axis2.osgi.version.range>
         <commons-lang.wso2.osgi.version.range>[2.6.0,3.0.0)</commons-lang.wso2.osgi.version.range>
         <import.package.version.commons.logging>[1.2.0,2.0.0)</import.package.version.commons.logging>
@@ -240,7 +230,6 @@
         <commons.codec.wso2.osgi.version.range>[1.16.0,2.0.0)</commons.codec.wso2.osgi.version.range>
         <httpcomponents-httpclient.wso2.osgi.version.range>[4.5.0, 5.0.0)</httpcomponents-httpclient.wso2.osgi.version.range>
         <httpcomponents-httpcore.wso2.osgi.version.range>[4.4.0, 5.0.0)</httpcomponents-httpcore.wso2.osgi.version.range>
-        <org.wso2.carbon.identity.organization.management.core.version.range>[1.0.0, 2.0.0)</org.wso2.carbon.identity.organization.management.core.version.range>
         <httpclient.version>4.5.13</httpclient.version>
     </properties>
 

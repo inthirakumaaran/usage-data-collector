@@ -21,14 +21,10 @@ package org.wso2.carbon.usage.data.collector.identity.counter;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.context.PrivilegedCarbonContext;
-import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
 import org.wso2.carbon.usage.data.collector.identity.util.UsageCollectorConstants;
 import org.wso2.carbon.user.core.UserStoreManager;
 import org.wso2.carbon.user.core.common.AbstractUserStoreManager;
 import org.wso2.carbon.user.core.jdbc.JDBCUserStoreManager;
-import org.wso2.carbon.user.core.model.ExpressionAttribute;
-import org.wso2.carbon.user.core.model.ExpressionCondition;
-import org.wso2.carbon.user.core.model.ExpressionOperation;
 import org.wso2.carbon.user.core.service.RealmService;
 import org.wso2.carbon.user.core.UserCoreConstants;
 import org.apache.commons.lang.StringUtils;
@@ -52,67 +48,20 @@ public class UserCounter {
     private static final int MAX_REQUESTS_PER_MINUTE = 2;
 
     private final RealmService realmService;
-    private final OrganizationManager organizationManager;
 
-    public UserCounter(RealmService realmService, OrganizationManager organizationManager) {
+    public UserCounter(RealmService realmService) {
 
         this.realmService = realmService;
-        this.organizationManager = organizationManager;
-    }
-
-    /**
-     * Main method: Count all users in a tenant
-     */
-    public int countAllUsersInTenant(String tenantDomain) throws Exception {
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Counting users in tenant: " + tenantDomain);
-        }
-        String rootOrgId = organizationManager.resolveOrganizationId(tenantDomain);
-        if (rootOrgId == null) {
-            return 0;
-        }
-
-        // Get all organizations (root + children)
-        List<String> allOrgIds = new ArrayList<>();
-        allOrgIds.add(rootOrgId);
-
-        List<String> childOrgIds = organizationManager.getChildOrganizationsIds(rootOrgId, true);
-        if (childOrgIds != null) {
-            allOrgIds.addAll(childOrgIds);
-        }
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Found " + allOrgIds.size() + " organizations in tenant: " + tenantDomain);
-        }
-
-        // Count users across all organizations
-        int totalUsers = 0;
-        for (String orgId : allOrgIds) {
-            try {
-                int usersInOrg = countUsersInOrganization(orgId);
-                totalUsers += usersInOrg;
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug(String.format("Organization %s has %d users", orgId, usersInOrg));
-                }
-            } catch (Exception e) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Error counting users in organization: " + orgId, e);
-                }
-            }
-        }
-        return totalUsers;
     }
 
     /**
      * Count users in tenant across all user stores
      */
-    private int countUsersInOrganization(String organizationId) throws Exception {
-
-        String tenantDomain = organizationManager.resolveTenantDomain(organizationId);
-        int tenantId = realmService.getTenantManager().getTenantId(tenantDomain);
+    public int countUsersInOrganization(String tenantDomain) {
 
         try {
+            int tenantId = realmService.getTenantManager().getTenantId(tenantDomain);
+
             PrivilegedCarbonContext.startTenantFlow();
             PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantId(tenantId);
             PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantDomain(tenantDomain);
@@ -121,7 +70,11 @@ public class UserCounter {
                     (UserStoreManager) realmService.getTenantUserRealm(tenantId).getUserStoreManager();
 
             return getTotalUsersFromAllDomains(userStoreManager);
-
+        } catch (Exception e) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Error calculating user count for: " + tenantDomain, e);
+            }
+            return 0;
         } finally {
             PrivilegedCarbonContext.endTenantFlow();
         }
@@ -162,68 +115,6 @@ public class UserCounter {
             return (int) abstractUSM.countUsersWithClaims(UsageCollectorConstants.USERNAME_CLAIM, "*");
         }
         return 0;
-    }
-
-    /**
-     * Count users in LDAP domain (with pagination and rate limiting)
-     */
-    private int countLDAPUsers(UserStoreManager userStoreManager, String domain) throws Exception {
-
-
-        int totalCount = 0;
-        int offset = 0;
-        int iteration = 0;
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Starting paginated count for LDAP domain: " + domain);
-        }
-        while (iteration < MAX_LDAP_ITERATIONS) {
-            try {
-                // Apply rate limiting before request
-                if (iteration > 0) {
-                    applyRateLimiting(iteration);
-                }
-
-                ExpressionCondition condition = new ExpressionCondition(ExpressionOperation.SW.toString(),
-                        ExpressionAttribute.USERNAME.toString(), "");
-
-                // Get page count
-                int pageCount = ((AbstractUserStoreManager) userStoreManager).getUsersCount(
-                        condition,
-                        domain,
-                        UserCoreConstants.DEFAULT_PROFILE,
-                        LDAP_PAGE_SIZE,
-                        offset,
-                        false
-                );
-
-                if (pageCount == 0 || pageCount < LDAP_PAGE_SIZE) {
-                    totalCount += pageCount;
-                    break;
-                }
-
-                totalCount += pageCount;
-                offset += LDAP_PAGE_SIZE;
-                iteration++;
-            } catch (InterruptedException e) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Thread interrupted during rate limiting sleep", e);
-                }
-                Thread.currentThread().interrupt();
-                break;
-            } catch (Exception e) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Error at offset " + offset + " for domain " + domain, e);
-                }
-                break;
-            }
-        }
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug(String.format("LDAP domain '%s' total: %d users (%d iterations)",
-                    domain, totalCount, iteration + 1));
-        }
-        return totalCount;
     }
 
     /**

@@ -30,7 +30,6 @@ import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
 import org.wso2.carbon.core.clustering.api.CoordinatedActivity;
-import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
 import org.wso2.carbon.usage.data.collector.identity.UsageDataCollector;
 import org.wso2.carbon.usage.data.collector.identity.UsageDataCollectorScheduler;
 import org.wso2.carbon.usage.data.collector.identity.UsageDataCollectorTask;
@@ -159,23 +158,6 @@ public class UsageDataCollectorServiceComponent {
     protected void unsetRealmService(RealmService realmService) {
 
         UsageDataCollectorDataHolder.getInstance().setRealmService(null);
-    }
-
-    @Reference(
-            name = "organization.manager",
-            service = OrganizationManager.class,
-            cardinality = ReferenceCardinality.MANDATORY,
-            policy = ReferencePolicy.DYNAMIC,
-            unbind = "unsetOrganizationManager"
-    )
-    protected void setOrganizationManager(OrganizationManager organizationManager) {
-
-        UsageDataCollectorDataHolder.getInstance().setOrganizationManager(organizationManager);
-    }
-
-    protected void unsetOrganizationManager(OrganizationManager organizationManager) {
-
-        UsageDataCollectorDataHolder.getInstance().setOrganizationManager(null);
     }
 
     @Reference(

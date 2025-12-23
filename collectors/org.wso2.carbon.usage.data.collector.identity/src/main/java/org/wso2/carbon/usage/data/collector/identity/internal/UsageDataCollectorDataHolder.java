@@ -18,7 +18,6 @@
 
 package org.wso2.carbon.usage.data.collector.identity.internal;
 
-import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
 import org.wso2.carbon.usage.data.collector.common.receiver.Receiver;
 import org.wso2.carbon.user.core.service.RealmService;
 import org.wso2.carbon.utils.ConfigurationContextService;
@@ -30,7 +29,6 @@ public class UsageDataCollectorDataHolder {
 
     private static final UsageDataCollectorDataHolder instance = new UsageDataCollectorDataHolder();
 
-    private OrganizationManager organizationManager;
     private RealmService realmService;
     private ConfigurationContextService configContextService;
     private Receiver receiver;
@@ -58,16 +56,6 @@ public class UsageDataCollectorDataHolder {
     public void setRealmService(RealmService realmService) {
 
         this.realmService = realmService;
-    }
-
-    public OrganizationManager getOrganizationManager() {
-
-        return organizationManager;
-    }
-
-    public void setOrganizationManager(OrganizationManager organizationManager) {
-
-        this.organizationManager = organizationManager;
     }
 
     public ConfigurationContextService getConfigurationContextService() {

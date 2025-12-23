@@ -20,11 +20,9 @@ package org.wso2.carbon.usage.data.collector.identity;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
 import org.wso2.carbon.usage.data.collector.common.publisher.api.model.ApiRequest;
 import org.wso2.carbon.usage.data.collector.common.publisher.api.model.UsageCount;
 import org.wso2.carbon.usage.data.collector.common.util.MetaInfoHolder;
-import org.wso2.carbon.usage.data.collector.identity.counter.OrganizationCounter;
 import org.wso2.carbon.usage.data.collector.identity.counter.UserCounter;
 import org.wso2.carbon.usage.data.collector.identity.internal.UsageDataCollectorDataHolder;
 import org.wso2.carbon.usage.data.collector.identity.model.SystemUsage;
@@ -50,17 +48,13 @@ public class UsageDataCollector {
     public static final String TOTAL_ROOT_ORGS = "TOTAL_ROOT_ORGS";
 
     private final RealmService realmService;
-    private final OrganizationManager organizationManager;
     private final UserCounter userCountCalculator;
-    private final OrganizationCounter orgCountCalculator;
     private final PublisherImp publisher;
 
     public UsageDataCollector() {
 
         this.realmService = UsageDataCollectorDataHolder.getInstance().getRealmService();
-        this.organizationManager = UsageDataCollectorDataHolder.getInstance().getOrganizationManager();
-        this.userCountCalculator = new UserCounter(realmService, organizationManager);
-        this.orgCountCalculator = new OrganizationCounter(organizationManager);
+        this.userCountCalculator = new UserCounter(realmService);
         this.publisher = new PublisherImp();
     }
 
@@ -101,7 +95,6 @@ public class UsageDataCollector {
             }
 
             // Calculate B2B organization count and total users
-            int totalB2BOrgs = 0;
             int totalUsers = 0;
 
             for (String tenantDomain : allTenantDomains) {
@@ -112,13 +105,7 @@ public class UsageDataCollector {
                     TenantUsage stats = processTenant(tenantDomain);
 
                     // Add to totals
-                    totalB2BOrgs += stats.getB2bOrgCount();
                     totalUsers += stats.getUserCount();
-
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug(String.format("Processed: %s | B2B Orgs: %d | Users: %d",
-                                tenantDomain, stats.getB2bOrgCount(), stats.getUserCount()));
-                    }
                 } catch (Exception e) {
                     if (LOG.isDebugEnabled()) {
                         LOG.debug("Error processing tenant: " + tenantDomain, e);
@@ -126,7 +113,6 @@ public class UsageDataCollector {
                     }
                 }
             }
-            usage.setTotalB2BOrganizations(totalB2BOrgs);
             usage.setTotalUsers(totalUsers);
         } catch (Exception e) {
             if (LOG.isDebugEnabled()) {
@@ -143,27 +129,15 @@ public class UsageDataCollector {
     private TenantUsage processTenant(String tenantDomain) {
 
         TenantUsage stats = new TenantUsage(tenantDomain);
-
-        // Use OrganizationCountCalculator to count B2B organizations
-        int b2bOrgCount = orgCountCalculator.countB2BOrganizations(tenantDomain);
-        stats.setB2bOrgCount(b2bOrgCount);
-
-        try {
-            // Use UserCountCalculator to count all users in the tenant
-            int userCount = userCountCalculator.countAllUsersInTenant(tenantDomain);
-            stats.setUserCount(userCount);
-        } catch (Exception e) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Error calculating user count for: " + tenantDomain, e);
-            }
-        }
+        // Use UserCountCalculator to count all users in the tenant
+        int userCount = userCountCalculator.countUsersInOrganization(tenantDomain);
+        stats.setUserCount(userCount);
         return stats;
     }
 
     private void publishUsageMetrics(SystemUsage report) {
 
         publishMetric(report.getTotalUsers(), TOTAL_USERS);
-        publishMetric(report.getTotalB2BOrganizations(), TOTAL_B2B_ORGS);
         publishMetric(report.getRootTenantCount(), TOTAL_ROOT_ORGS);
     }
 
