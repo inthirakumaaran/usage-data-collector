@@ -23,15 +23,12 @@ import com.google.gson.GsonBuilder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.NameValuePair;
-import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.jetbrains.annotations.NotNull;
@@ -48,13 +45,9 @@ import org.wso2.carbon.usage.data.collector.common.publisher.api.model.ApiRespon
 
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
-import javax.net.ssl.SSLContext;
 import javax.sql.DataSource;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -76,10 +69,6 @@ public class ApimPublisher implements Publisher {
 
     // Default receiver base URL (fallback when configuration is not available)
     private static final String DEFAULT_RECEIVER_BASE_URL = "https://localhost:9443";
-
-    // Timeout configuration (in milliseconds)
-    private static final int DEFAULT_CONNECT_TIMEOUT_MS = 5000;  // 5 seconds
-    private static final int DEFAULT_SOCKET_TIMEOUT_MS = 10000;  // 10 seconds
 
     private volatile DataSource dataSource;
 
@@ -113,6 +102,52 @@ public class ApimPublisher implements Publisher {
         try {
             String receiverBaseUrl = getReceiverBaseUrl();
             String fullUrl = buildFullUrl(receiverBaseUrl, request.getEndpoint());
+
+            // Get Basic Auth credentials from EventHubConfiguration
+            EventHubConfigurationDto eventHubConfig = getEventHubConfiguration();
+            String username = null;
+            String password = null;
+
+            if (eventHubConfig != null) {
+                username = eventHubConfig.getUsername();
+                password = eventHubConfig.getPassword();
+            }
+
+            // Add Basic Auth header to request if credentials are available
+            if (username != null && password != null && !username.trim().isEmpty()) {
+                String auth = username + ":" + password;
+                String encodedAuth = java.util.Base64.getEncoder().encodeToString(
+                        auth.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+                // Create a new request with the Authorization header added
+                ApiRequest.Builder requestBuilder = new ApiRequest.Builder()
+                        .withData(request.getData())
+                        .withEndpoint(request.getEndpoint())
+                        .withHttpMethod(request.getHttpMethod())
+                        .withTimeout(request.getTimeoutMs())
+                        .addHeader("Authorization", "Basic " + encodedAuth);
+
+                // Copy existing headers
+                if (request.getHeaders() != null) {
+                    requestBuilder.withHeaders(request.getHeaders());
+                }
+
+                // Copy existing query params
+                if (request.getQueryParams() != null) {
+                    requestBuilder.withQueryParams(request.getQueryParams());
+                }
+
+                request = requestBuilder.build();
+
+                if (log.isDebugEnabled()) {
+                    log.debug("Added Basic Authentication header for receiver API call with username: " + username);
+                }
+            } else {
+                if (log.isDebugEnabled()) {
+                    log.debug("No authentication credentials provided for receiver API call");
+                }
+            }
+
             return sendHttpRequest(fullUrl, request);
         } catch (Exception e) {
             String errorMsg = "Receiver API call failed: " + e.getMessage();
@@ -132,6 +167,23 @@ public class ApimPublisher implements Publisher {
      * @return Receiver base URL from configuration or default
      */
     String getReceiverBaseUrl() {
+        EventHubConfigurationDto eventHubConfig = getEventHubConfiguration();
+        if (eventHubConfig != null) {
+            String serviceUrl = eventHubConfig.getServiceUrl();
+            if (serviceUrl != null && !serviceUrl.trim().isEmpty()) {
+                return serviceUrl;
+            }
+        }
+        return DEFAULT_RECEIVER_BASE_URL;
+    }
+
+    /**
+     * Gets the EventHubConfigurationDto from APIManagerConfiguration.
+     * Package-private for testing.
+     *
+     * @return EventHubConfigurationDto or null if not available
+     */
+    EventHubConfigurationDto getEventHubConfiguration() {
         try {
             // Get ServiceReferenceHolder instance
             ServiceReferenceHolder serviceReferenceHolder = ServiceReferenceHolder.getInstance();
@@ -141,24 +193,15 @@ public class ApimPublisher implements Publisher {
                         .getAPIManagerConfiguration();
                 if (apiManagerConfig != null) {
                     // Get EventHubConfigurationDto
-                    EventHubConfigurationDto eventHubConfig = apiManagerConfig.getEventHubConfigurationDto();
-                    if (eventHubConfig != null) {
-                        // Get service URL
-                        String serviceUrl = eventHubConfig.getServiceUrl();
-                        if (serviceUrl != null && !serviceUrl.trim().isEmpty()) {
-                            return serviceUrl;
-                        }
-                    }
+                    return apiManagerConfig.getEventHubConfigurationDto();
                 }
             }
         } catch (Exception e) {
             if (log.isDebugEnabled()) {
-                log.error(
-                        "Could not retrieve receiver URL from EventHubConfiguration, using default: "
-                                + DEFAULT_RECEIVER_BASE_URL, e);
+                log.error("Could not retrieve EventHubConfiguration", e);
             }
         }
-        return DEFAULT_RECEIVER_BASE_URL;
+        return null;
     }
 
     @Override
