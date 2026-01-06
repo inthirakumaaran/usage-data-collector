@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package org.wso2.carbon.usage.data.collector.apim.collector.transaction.aggregator;
+package org.wso2.carbon.usage.data.collector.apim.gateway.transaction.aggregator;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -26,13 +26,17 @@ import org.wso2.carbon.usage.data.collector.common.publisher.api.model.ApiReques
 import org.wso2.carbon.usage.data.collector.common.publisher.api.model.ApiResponse;
 import org.wso2.carbon.usage.data.collector.common.publisher.api.model.UsageCount;
 import org.wso2.carbon.usage.data.collector.common.util.MetaInfoHolder;
-import org.wso2.carbon.usage.data.collector.apim.internal.ApimUsageDataCollectorConstants;
+import org.wso2.carbon.usage.data.collector.apim.gateway.internal.GatewayConstants;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * Aggregates transaction counts and publishes them hourly.
+ * Gateway-specific component that tracks API transaction volume.
+ */
 public class TransactionAggregator {
 
     private static final Log log = LogFactory.getLog(TransactionAggregator.class);
@@ -151,10 +155,10 @@ public class TransactionAggregator {
             String product = MetaInfoHolder.getProduct();
 
             UsageCount usageCount = new UsageCount(nodeId, product, count,
-                    ApimUsageDataCollectorConstants.TRANSACTION_TYPE);
+                    GatewayConstants.TRANSACTION_TYPE);
 
             ApiRequest request = new ApiRequest.Builder()
-                    .withEndpoint(ApimUsageDataCollectorConstants.USAGE_COUNT_ENDPOINT)
+                    .withEndpoint(GatewayConstants.USAGE_COUNT_ENDPOINT)
                     .withData(usageCount)
                     .build();
 
@@ -179,7 +183,7 @@ public class TransactionAggregator {
             scheduledExecutorService.shutdown();
             try {
                 if (!scheduledExecutorService.awaitTermination(
-                        ApimUsageDataCollectorConstants.SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                        GatewayConstants.SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
                     scheduledExecutorService.shutdownNow();
                     if(log.isDebugEnabled()) {
                         log.warn("TransactionAggregator forced shutdown");

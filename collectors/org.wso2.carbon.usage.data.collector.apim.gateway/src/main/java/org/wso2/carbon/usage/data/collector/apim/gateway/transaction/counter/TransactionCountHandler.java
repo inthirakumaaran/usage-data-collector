@@ -16,15 +16,22 @@
  * under the License.
  */
 
-package org.wso2.carbon.usage.data.collector.apim.collector.transaction.counter;
+package org.wso2.carbon.usage.data.collector.apim.gateway.transaction.counter;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.synapse.AbstractExtendedSynapseHandler;
 import org.apache.synapse.MessageContext;
 import org.wso2.carbon.usage.data.collector.common.publisher.api.Publisher;
-import org.wso2.carbon.usage.data.collector.apim.collector.transaction.aggregator.TransactionAggregator;
+import org.wso2.carbon.usage.data.collector.apim.gateway.transaction.aggregator.TransactionAggregator;
 
+/**
+ * Synapse handler that intercepts API calls and counts transactions.
+ * This handler is registered in Synapse handlers configuration and
+ * gets called for every API request/response flow.
+ *
+ * Only works in Gateway profile where Synapse is available.
+ */
 public class TransactionCountHandler extends AbstractExtendedSynapseHandler {
 
     private static final Log log = LogFactory.getLog(TransactionCountHandler.class);
