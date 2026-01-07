@@ -20,8 +20,7 @@ package org.wso2.carbon.usage.data.collector.identity.internal;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceRegistration;
+import org.osgi.framework.*;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -33,17 +32,17 @@ import org.wso2.carbon.core.clustering.api.CoordinatedActivity;
 import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
 import org.wso2.carbon.usage.data.collector.identity.UsageDataCollector;
 import org.wso2.carbon.usage.data.collector.identity.UsageDataCollectorScheduler;
-import org.wso2.carbon.usage.data.collector.identity.UsageDataCollectorTask;
+import org.wso2.carbon.usage.data.collector.identity.UsageDataCollectorWithoutB2B;
 import org.wso2.carbon.usage.data.collector.identity.publisher.PublisherImp;
 import org.wso2.carbon.usage.data.collector.identity.util.ClusteringUtil;
 import org.wso2.carbon.user.core.service.RealmService;
 import org.wso2.carbon.utils.ConfigurationContextService;
 
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 /**
  * Manages the lifecycle and scheduling of usage data collection.
@@ -58,8 +57,9 @@ public class UsageDataCollectorServiceComponent {
 
     private static final long SHUTDOWN_TIMEOUT_SECONDS = 10;
     private final AtomicBoolean hasRunUsageCollection = new AtomicBoolean(false);
+    private static final String EXPECTED_COMPONENT_NAME = "org.wso2.carbon.identity.core";
+    private static final String VERSION_SUPPORTED_IN_7_PLUS = "7.0.0";
 
-    private UsageDataCollector collectorService;
     private ScheduledExecutorService scheduler;
     private ScheduledFuture<?> scheduledTask;
     private BundleContext bundleContext;
@@ -72,8 +72,8 @@ public class UsageDataCollectorServiceComponent {
         try {
 
             this.bundleContext = context.getBundleContext();
-
-            collectorService = new UsageDataCollector();
+            // Register 700 and above version related services.
+            consumeServicesFor700PlusVersion(context);
 
             boolean isClusteringEnabled = ClusteringUtil.isClusteringEnabled();
 
@@ -105,6 +105,9 @@ public class UsageDataCollectorServiceComponent {
     protected void deactivate(ComponentContext context) {
 
         cleanup();
+        UsageDataCollectorDataHolder.getInstance().setOrganizationManager(null);
+        LOG.debug("Organization mgt service is unset in usage data collector service.");
+
         LOG.debug("UsageDataCollectorServiceComponent deactivated successfully");
     }
 
@@ -162,23 +165,6 @@ public class UsageDataCollectorServiceComponent {
     }
 
     @Reference(
-            name = "organization.manager",
-            service = OrganizationManager.class,
-            cardinality = ReferenceCardinality.MANDATORY,
-            policy = ReferencePolicy.DYNAMIC,
-            unbind = "unsetOrganizationManager"
-    )
-    protected void setOrganizationManager(OrganizationManager organizationManager) {
-
-        UsageDataCollectorDataHolder.getInstance().setOrganizationManager(organizationManager);
-    }
-
-    protected void unsetOrganizationManager(OrganizationManager organizationManager) {
-
-        UsageDataCollectorDataHolder.getInstance().setOrganizationManager(null);
-    }
-
-    @Reference(
             name = "configuration.context.service",
             service = ConfigurationContextService.class,
             cardinality = ReferenceCardinality.MANDATORY,
@@ -210,6 +196,33 @@ public class UsageDataCollectorServiceComponent {
     protected void unsetReceiver(org.wso2.carbon.usage.data.collector.common.receiver.Receiver receiver) {
 
         UsageDataCollectorDataHolder.getInstance().setReceiver(null);
+    }
+
+    /**
+     * Consume services manually if they available in the runtime.
+     *
+     * @param bundleContext Bundle Context.
+     * @param serviceClass  Expected service class name.
+     * @param setter        Service Data Holder setter method.
+     * @param serviceName   Expected service name.
+     */
+    private <T> void consumeService(BundleContext bundleContext, Class<T> serviceClass,
+                                    Consumer<T> setter, String serviceName) {
+
+        ServiceReference<T> serviceReference = bundleContext.getServiceReference(serviceClass);
+        if (serviceReference != null) {
+            T service = bundleContext.getService(serviceReference);
+            if (service != null) {
+                setter.accept(service);
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Successfully registered " + serviceName + " Service.");
+                }
+            } else {
+                LOG.debug(serviceName + " Service reference is available, but service instance is null.");
+            }
+        } else {
+            LOG.debug(serviceName + " Service is not available.");
+        }
     }
 
     /**
@@ -253,7 +266,43 @@ public class UsageDataCollectorServiceComponent {
 
     private void runUsageCollectionTask() {
 
-        schedulerNew = new UsageDataCollectorScheduler(collectorService);
+        if (UsageDataCollectorDataHolder.getInstance().getPlus700()) {
+            UsageDataCollector collectorService = new UsageDataCollector();
+            schedulerNew = new UsageDataCollectorScheduler(collectorService);
+        } else {
+            UsageDataCollectorWithoutB2B collectorWithoutB2B = new UsageDataCollectorWithoutB2B();
+            schedulerNew = new UsageDataCollectorScheduler(collectorWithoutB2B);
+        }
         schedulerNew.startScheduledTask();
+    }
+
+    /**
+     * This method check for the expected component version in the 7.0.0 to proceed with binding new services.
+     *
+     * @param context Component context.
+     */
+    private void consumeServicesFor700PlusVersion(ComponentContext context) {
+
+        BundleContext bundleContext = context.getBundleContext();
+        Bundle[] bundles = bundleContext.getBundles();
+
+        for (Bundle bundle : bundles) {
+            if (EXPECTED_COMPONENT_NAME.equals(bundle.getSymbolicName())) {
+                Version version = bundle.getVersion();
+                if (version.compareTo(Version.parseVersion(VERSION_SUPPORTED_IN_7_PLUS)) >= 0) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug(EXPECTED_COMPONENT_NAME + " is " + version + " - Proceeding with service binding.");
+                    }
+                    UsageDataCollectorDataHolder.getInstance().setPlus700(true);
+                    consumeService(bundleContext,
+                            OrganizationManager.class,
+                            UsageDataCollectorDataHolder.getInstance()::setOrganizationManager,
+                            "Organization Manager");
+                } else {
+                    LOG.debug(EXPECTED_COMPONENT_NAME + " is " + version + " - Skipping service binding.");
+                }
+                break;
+            }
+        }
     }
 }

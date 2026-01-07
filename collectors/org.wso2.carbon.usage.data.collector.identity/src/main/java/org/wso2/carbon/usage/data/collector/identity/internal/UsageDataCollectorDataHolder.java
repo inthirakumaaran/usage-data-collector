@@ -34,6 +34,7 @@ public class UsageDataCollectorDataHolder {
     private RealmService realmService;
     private ConfigurationContextService configContextService;
     private Receiver receiver;
+    private boolean plus700;
 
     public Receiver getReceiver() {
 
@@ -78,6 +79,16 @@ public class UsageDataCollectorDataHolder {
     public void setConfigurationContextService(ConfigurationContextService configContextService) {
 
         this.configContextService = configContextService;
+    }
+
+    public void setPlus700(boolean plus700) {
+
+        this.plus700 = plus700;
+    }
+
+    public boolean getPlus700() {
+
+        return plus700;
     }
 
 }

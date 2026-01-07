@@ -28,9 +28,9 @@ public class UsageDataCollectorTask implements Runnable {
 
     private static final Log LOG = LogFactory.getLog(UsageDataCollectorTask.class);
 
-    private final UsageDataCollector collector;
+    private final UsageDataCollectorInterface collector;
 
-    public UsageDataCollectorTask(UsageDataCollector collector) {
+    public UsageDataCollectorTask(UsageDataCollectorInterface collector) {
 
         this.collector = collector;
     }
