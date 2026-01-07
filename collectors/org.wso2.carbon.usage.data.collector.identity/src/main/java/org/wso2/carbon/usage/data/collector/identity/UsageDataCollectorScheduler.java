@@ -60,12 +60,12 @@ public class UsageDataCollectorScheduler {
 
     private ScheduledExecutorService scheduler;
     private ScheduledFuture<?> scheduledTask;
-    private final UsageDataCollector collectorService;
+    private final UsageDataCollectorInterface collectorService;
 
     /**
      * Constructor - loads configuration from identity.xml
      */
-    public UsageDataCollectorScheduler(UsageDataCollector collectorService) {
+    public UsageDataCollectorScheduler(UsageDataCollectorInterface collectorService) {
 
         this.collectorService = collectorService;
         // Load configuration
