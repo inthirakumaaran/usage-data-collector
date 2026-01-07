@@ -60,7 +60,7 @@
         <dependency>
             <groupId>org.wso2.carbon</groupId>
             <artifactId>org.wso2.carbon.usage.data.collector.common</artifactId>
-            <version>${common.collector.version}</version>
+            <version>${collector.common.version}</version>
         </dependency>
 
         <!-- Synapse dependencies - required for transaction counting -->
@@ -143,8 +143,8 @@
                             org.apache.commons.logging.*,
                             org.apache.synapse.*;version="${synapse.version.range}",
                             org.apache.axis2.*;version="${axis2.version}",
-                            org.wso2.carbon.usage.data.collector.common.publisher.api.*;version="${common.collector.version}",
-                            org.wso2.carbon.usage.data.collector.common.util.*;version="${common.collector.version}",
+                            org.wso2.carbon.usage.data.collector.common.publisher.api.*;version="${collector.common.version.range}",
+                            org.wso2.carbon.usage.data.collector.common.util.*;version="${collector.common.version.range}",
                             org.osgi.service.*;version="${imp.package.version.osgi.service}",
                             *;resolution:=optional
                         </Import-Package>
@@ -181,7 +181,8 @@
         <maven.surefire.plugin.version>3.5.4</maven.surefire.plugin.version>
 
         <!-- Dependency Versions -->
-        <common.collector.version>1.0.0-SNAPSHOT</common.collector.version>
+        <collector.common.version>1.0.1</collector.common.version>
+        <collector.common.version.range>[1.0.0, 2.0.0)</collector.common.version.range>
         <synapse.version>2.1.7-wso2v183</synapse.version>
         <synapse.version.range>[2.0.0,5.0.0)</synapse.version.range>
         <axis2.version>[1.6.1,2.0.0)</axis2.version>
