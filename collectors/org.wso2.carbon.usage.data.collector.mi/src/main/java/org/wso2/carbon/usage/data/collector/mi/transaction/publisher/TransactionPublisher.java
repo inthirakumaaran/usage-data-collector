@@ -28,35 +28,6 @@ import org.wso2.carbon.usage.data.collector.mi.transaction.record.TransactionRep
 public interface TransactionPublisher {
 
     /**
-     * Starts the periodic transaction reporting.
-     * This method should be called to begin collecting and reporting
-     * transaction data at regular intervals.
-     */
-    void startReporting();
-
-    /**
-     * Stops the periodic transaction reporting.
-     * This method should be called to stop the reporting process.
-     */
-    void stopReporting();
-
-    /**
-     * Reports current transaction data immediately.
-     * This method can be called to force an immediate report
-     * of current transaction statistics.
-     *
-     * @return true if reporting was successful, false otherwise
-     */
-    boolean reportNow();
-
-    /**
-     * Checks if the transaction reporter is currently active.
-     *
-     * @return true if reporting is active, false otherwise
-     */
-    boolean isReportingActive();
-
-    /**
      * Publishes a specific transaction report.
      * This method is used by the aggregator to publish transaction data.
      *

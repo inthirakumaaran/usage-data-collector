@@ -114,7 +114,8 @@ public interface Publisher {
 
                 // Non-2xx response - check if we should retry
                 String errorMsg = "Received non-successful status code: " + statusCode +
-                        ", body: " + response.getResponseBody();
+                        ", error: " + (response.getErrorMessage() != null ? response.getErrorMessage() : 
+                        response.getResponseBody());
                 lastException = new PublisherException(errorMsg);
 
                 // Check if this status code is retryable
