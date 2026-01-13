@@ -27,6 +27,9 @@ import org.apache.http.util.EntityUtils;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
 import org.wso2.carbon.usage.data.collector.common.publisher.api.Publisher;
 import org.wso2.carbon.usage.data.collector.common.publisher.api.PublisherException;
 import org.wso2.carbon.usage.data.collector.common.publisher.api.model.ApiRequest;
@@ -34,9 +37,10 @@ import org.wso2.carbon.usage.data.collector.common.publisher.api.model.ApiRespon
 import org.wso2.carbon.usage.data.collector.common.publisher.api.model.DeploymentInformation;
 import org.wso2.carbon.usage.data.collector.common.publisher.api.model.MetaInformation;
 import org.wso2.carbon.usage.data.collector.common.publisher.api.model.UsageCount;
+import org.wso2.carbon.usage.data.collector.common.receiver.Receiver;
 import org.wso2.carbon.usage.data.collector.mi.datasource.DataSourceProvider;
+import org.wso2.carbon.usage.data.collector.mi.internal.UsageDataCollectorDataHolder;
 import org.wso2.carbon.usage.data.collector.mi.publisher.PublisherConstants;
-import org.wso2.carbon.usage.data.receiver.core.service.UsageDataProcessor;
 
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
@@ -54,7 +58,6 @@ import javax.sql.DataSource;
 )
 public class PublisherImpl implements Publisher {
     
-    private final UsageDataProcessor usageDataProcessor = new UsageDataProcessor();
     private volatile boolean isShuttingDown = false;
     
     @Activate
@@ -104,6 +107,27 @@ public class PublisherImpl implements Publisher {
         
         if (log.isDebugEnabled()) {
             log.debug("PublisherImpl OSGi component deactivated");
+        }
+    }
+
+    @Reference(
+            name = "receiver",
+            service = Receiver.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.DYNAMIC,
+            unbind = "unsetReceiver"
+    )
+    protected void setReceiver(Receiver receiver) {
+        UsageDataCollectorDataHolder.getInstance().setReceiver(receiver);
+        if (log.isDebugEnabled()) {
+            log.debug("Receiver service bound to PublisherImpl");
+        }
+    }
+
+    protected void unsetReceiver(Receiver receiver) {
+        UsageDataCollectorDataHolder.getInstance().setReceiver(null);
+        if (log.isDebugEnabled()) {
+            log.debug("Receiver service unbound from PublisherImpl");
         }
     }
 
@@ -195,10 +219,18 @@ public class PublisherImpl implements Publisher {
             if (validationError != null) {
                 return ApiResponse.failure(400, validationError);
             }
-            // Convert to receiver model and process asynchronously
-            org.wso2.carbon.usage.data.receiver.core.model.request.UsageCount receiverModel = 
-                    convertToReceiverUsageCount(usageCount);
-            usageDataProcessor.processUsageCountDataAsync(receiverModel);
+            
+            // Get Receiver service from DataHolder
+            Receiver receiver = UsageDataCollectorDataHolder.getInstance().getReceiver();
+            if (receiver == null) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Receiver service not available - cannot process usage count");
+                }
+                return ApiResponse.failure(503, "Receiver service not available");
+            }
+            
+            // Process using Receiver interface
+            receiver.processUsageData(usageCount);
             return ApiResponse.success(201, "{\"message\":\"Record received successfully.\"}");
         } catch (Exception e) {
             if (log.isDebugEnabled()) {
@@ -227,10 +259,18 @@ public class PublisherImpl implements Publisher {
             if (validationError != null) {
                 return ApiResponse.failure(400, validationError);
             }
-            // Convert to receiver model and process asynchronously
-            org.wso2.carbon.usage.data.receiver.core.model.request.DeploymentInformation receiverModel = 
-                    convertToReceiverDeploymentInformation(deploymentInfo);
-            usageDataProcessor.processDeploymentInformationDataAsync(receiverModel);
+            
+            // Get Receiver service from DataHolder
+            Receiver receiver = UsageDataCollectorDataHolder.getInstance().getReceiver();
+            if (receiver == null) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Receiver service not available - cannot process deployment information");
+                }
+                return ApiResponse.failure(503, "Receiver service not available");
+            }
+            
+            // Process using Receiver interface
+            receiver.processDeploymentInformationData(deploymentInfo);
             return ApiResponse.success(201, "{\"message\":\"Record received successfully.\"}");
         } catch (Exception e) {
             if (log.isDebugEnabled()) {
@@ -259,10 +299,18 @@ public class PublisherImpl implements Publisher {
             if (validationError != null) {
                 return ApiResponse.failure(400, validationError);
             }
-            // Convert to receiver model and process asynchronously
-            org.wso2.carbon.usage.data.receiver.core.model.request.MetaInformation receiverModel = 
-                    convertToReceiverMetaInformation(metaInfo);
-            usageDataProcessor.processMetaInformationDataAsync(receiverModel);
+            
+            // Get Receiver service from DataHolder
+            Receiver receiver = UsageDataCollectorDataHolder.getInstance().getReceiver();
+            if (receiver == null) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Receiver service not available - cannot process meta information");
+                }
+                return ApiResponse.failure(503, "Receiver service not available");
+            }
+            
+            // Process using Receiver interface
+            receiver.processMetaInformationData(metaInfo);
             return ApiResponse.success(201, "{\"message\":\"Record received successfully.\"}");
         } catch (Exception e) {
             if (log.isDebugEnabled()) {
@@ -449,37 +497,5 @@ public class PublisherImpl implements Publisher {
             }
             throw new PublisherException(errorMsg, e);
         }
-    }
-    
-    // ======================== Receiver Model Conversion Methods ========================
-    
-    /**
-     * Converts collector's UsageCount to receiver's UsageCount model.
-     * Uses JSON serialization/deserialization for field mapping.
-     */
-    private org.wso2.carbon.usage.data.receiver.core.model.request.UsageCount 
-            convertToReceiverUsageCount(UsageCount collectorModel) {
-        String json = gson.toJson(collectorModel);
-        return gson.fromJson(json, org.wso2.carbon.usage.data.receiver.core.model.request.UsageCount.class);
-    }
-    
-    /**
-     * Converts collector's DeploymentInformation to receiver's DeploymentInformation model.
-     * Uses JSON serialization/deserialization for field mapping.
-     */
-    private org.wso2.carbon.usage.data.receiver.core.model.request.DeploymentInformation 
-            convertToReceiverDeploymentInformation(DeploymentInformation collectorModel) {
-        String json = gson.toJson(collectorModel);
-        return gson.fromJson(json, org.wso2.carbon.usage.data.receiver.core.model.request.DeploymentInformation.class);
-    }
-    
-    /**
-     * Converts collector's MetaInformation to receiver's MetaInformation model.
-     * Uses JSON serialization/deserialization for field mapping.
-     */
-    private org.wso2.carbon.usage.data.receiver.core.model.request.MetaInformation 
-            convertToReceiverMetaInformation(MetaInformation collectorModel) {
-        String json = gson.toJson(collectorModel);
-        return gson.fromJson(json, org.wso2.carbon.usage.data.receiver.core.model.request.MetaInformation.class);
     }
 }
