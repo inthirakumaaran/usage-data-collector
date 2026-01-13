@@ -92,7 +92,7 @@ public class TransactionAggregator {
         this.publisher = publisher;
         this.scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
 
-        long interval = 30 * 1000L;
+        long interval = 60 * 60 * 1000L;
         try {
         scheduledExecutorService.scheduleAtFixedRate(
                 this::publishAndReset,
