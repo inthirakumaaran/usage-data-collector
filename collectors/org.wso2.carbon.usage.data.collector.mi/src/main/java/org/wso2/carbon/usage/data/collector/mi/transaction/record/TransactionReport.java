@@ -19,26 +19,24 @@
 package org.wso2.carbon.usage.data.collector.mi.transaction.record;
 
 import java.time.Instant;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 public class TransactionReport {
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-            .withZone(ZoneId.systemDefault());
+
+    private static final DateTimeFormatter ISO_FORMATTER = DateTimeFormatter
+            .ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")
+            .withZone(ZoneOffset.UTC);
 
     private final String id;
     private final long totalCount;
-    private final long hourStartTime;
-    private final long hourEndTime;
-    private final String recordedTime;
+    private final String createdTime;
 
-    public TransactionReport(long totalCount, long hourStartTime, long hourEndTime) {
+    public TransactionReport(long totalCount) {
         this.id = UUID.randomUUID().toString();
         this.totalCount = totalCount;
-        this.hourStartTime = hourStartTime;
-        this.hourEndTime = hourEndTime;
-        this.recordedTime = FORMATTER.format(Instant.ofEpochMilli(hourEndTime));
+        this.createdTime = ISO_FORMATTER.format(Instant.now());
     }
 
     public String getId() {
@@ -49,24 +47,8 @@ public class TransactionReport {
         return totalCount;
     }
 
-    public long getHourStartTime() {
-        return hourStartTime;
-    }
-
-    public long getHourEndTime() {
-        return hourEndTime;
-    }
-
-    public String getRecordedTime() {
-        return recordedTime;
-    }
-
-    public String getFormattedStartTime() {
-        return FORMATTER.format(Instant.ofEpochMilli(hourStartTime));
-    }
-
-    public String getFormattedEndTime() {
-        return FORMATTER.format(Instant.ofEpochMilli(hourEndTime));
+    public String getCreatedTime() {
+        return createdTime;
     }
 
     @Override
@@ -74,7 +56,7 @@ public class TransactionReport {
         return "TransactionReport{" +
                 "id='" + id + '\'' +
                 ", totalCount=" + totalCount +
-                ", hourWindow='" + getFormattedStartTime() + " to " + getFormattedEndTime() + '\'' +
+                ", createdTime='" + createdTime + '\'' +
                 '}';
     }
 }

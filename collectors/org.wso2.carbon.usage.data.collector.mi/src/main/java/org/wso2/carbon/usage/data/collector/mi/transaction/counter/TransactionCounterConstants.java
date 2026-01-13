@@ -21,23 +21,15 @@ package org.wso2.carbon.usage.data.collector.mi.transaction.counter;
 public class TransactionCounterConstants {
     public static final String IS_INBOUND = "isInbound";
 
-    public static enum ServerType {
-        GATEWAY, MI
-    }
-
     public static final String IS_THERE_ASSOCIATED_INCOMING_REQUEST = "is_there_incoming_request";
     public static final String TRANSPORT_WS = "ws";
     public static final String TRANSPORT_WSS = "wss";
 
     public static final String SERVER_ID = "serverId";
 
-    // APIM Gateway related constants
-    public static final String APIM_CONFIG_CLASS = "org.wso2.carbon.apimgt.impl.internal.ServiceReferenceHolder";
-    public static final String GATEWAY_CONFIG_ROOT = "APIGateway.TransactionCounter";
-    public static final String GATEWAY_SERVER_ID = GATEWAY_CONFIG_ROOT + ".ServerID";
-
-    // MI related constants
-    public static final String MI_CONFIG_CLASS = "org.wso2.config.mapper.ConfigParser";
-    public static final String MI_CONFIG_ROOT = "integration.transaction_counter";
-    public static final String MI_SERVER_ID = MI_CONFIG_ROOT + ".server_id";
+    // OSGi Component Constants
+    public static final String COMPONENT_NAME = "org.wso2.carbon.usage.data.collector.mi.transaction.counter.handler.component";
+    public static final String HANDLER_NAME_PROPERTY = "handler.name=TransactionCountHandler";
+    public static final String HANDLER_ENABLED_PROPERTY = "handler.enabled=true";
+    public static final String TRANSACTION_PUBLISHER_REFERENCE = "transaction.publisher";
 }

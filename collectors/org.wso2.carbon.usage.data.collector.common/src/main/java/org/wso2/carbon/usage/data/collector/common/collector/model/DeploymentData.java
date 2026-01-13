@@ -36,7 +36,7 @@ public class DeploymentData extends UsageData {
     private String jdkVendor;
     private String productVersion;
     private String updateLevel;
-    private int numberOfCores;
+    private String numberOfCores;
 
     public DeploymentData() {
         super();
@@ -106,11 +106,11 @@ public class DeploymentData extends UsageData {
         this.updateLevel = updateLevel;
     }
 
-    public int getNumberOfCores() {
+    public String getNumberOfCores() {
         return numberOfCores;
     }
 
-    public void setNumberOfCores(int numberOfCores) {
+    public void setNumberOfCores(String numberOfCores) {
         this.numberOfCores = numberOfCores;
     }
 

@@ -258,7 +258,7 @@ public class DeploymentDataCollector {
     private void collectHardwareInfo(DeploymentData data) {
         try {
             int cores = Runtime.getRuntime().availableProcessors();
-            data.setNumberOfCores(cores);
+            data.setNumberOfCores(String.valueOf(cores));
         } catch (Exception e) {
             if(log.isDebugEnabled()) {
                 log.error("Error collecting hardware information", e);

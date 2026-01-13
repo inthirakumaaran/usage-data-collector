@@ -39,7 +39,7 @@ public class DataSourceProvider {
     private String dataSourceName;
     private boolean initialized = false;
     private static final int MAX_RETRIES = 3;
-    private static final long RETRY_DELAY_MS = 200; // Optional: 200ms backoff
+    private static final long RETRY_DELAY_MS = 60*1000; // 1 minute delay
 
     private DataSourceProvider() {}
 
@@ -58,14 +58,16 @@ public class DataSourceProvider {
         this.dataSourceName = dataSourceName;
         this.initialized = true;
 
-        // Don't throw exception on first initialization
-        // DataSource might not be ready yet
         if (dataSource == null) {
             dataSource = lookupDataSource();
             if (dataSource == null) {
-                log.warn("DataSource '" + dataSourceName + "' not available yet. Will retry on next access.");
+                if(log.isDebugEnabled()) {
+                    log.debug("DataSource '" + dataSourceName + "' not available yet. Will retry on next access.");
+                }
             } else {
-                log.debug("DataSource '" + dataSourceName + "' initialized successfully");
+                if(log.isDebugEnabled()) {
+                    log.debug("DataSource '" + dataSourceName + "' initialized successfully");
+                }
             }
         }
     }
@@ -85,8 +87,9 @@ public class DataSourceProvider {
                     synchronized (this) {
                         if (dataSource == null) {
                             dataSource = ds;
-                            log.debug("DataSource '" + dataSourceName + "' successfully loaded on attempt " +
-                                    (attempt + 1));
+                            if(log.isDebugEnabled()) {
+                                log.debug("DataSource '" + dataSourceName + "' successfully loaded on attempt " + (attempt + 1));
+                            }
                         }
                     }
                     // If dataSource was set by this thread, break; otherwise, continue retrying
@@ -114,15 +117,20 @@ public class DataSourceProvider {
     }
 
     private DataSource lookupDataSource() {
+
         try {
             org.osgi.framework.Bundle bundle = FrameworkUtil.getBundle(this.getClass());
             if (bundle == null) {
-                log.debug("Bundle is null - OSGi environment not ready or class not loaded as OSGi bundle");
+                if (log.isDebugEnabled()) {
+                    log.debug("Bundle is null - OSGi environment not ready or class not loaded as OSGi bundle");
+                }
                 return null;
             }
             BundleContext bundleContext = bundle.getBundleContext();
             if (bundleContext == null) {
-                log.debug("BundleContext is null - OSGi environment not ready");
+                if (log.isDebugEnabled()) {
+                    log.debug("BundleContext is null - OSGi environment not ready");
+                }
                 return null;
             }
 
@@ -130,14 +138,18 @@ public class DataSourceProvider {
                     "org.wso2.micro.integrator.ndatasource.core.DataSourceService");
 
             if (serviceRef == null) {
-                log.debug("DataSourceService reference not found - service may not be registered yet");
+                if (log.isDebugEnabled()) {
+                    log.debug("DataSourceService reference not found - service may not be registered yet");
+                }
                 return null;
             }
 
             Object dataSourceService = bundleContext.getService(serviceRef);
 
             if (dataSourceService == null) {
-                log.debug("DataSourceService is null");
+                if (log.isDebugEnabled()) {
+                    log.debug("DataSourceService is null");
+                }
                 return null;
             }
 
@@ -146,7 +158,9 @@ public class DataSourceProvider {
                     .invoke(dataSourceService, dataSourceName);
 
             if (carbonDataSource == null) {
-                log.debug("CarbonDataSource '" + dataSourceName + "' not found in registry");
+                if (log.isDebugEnabled()) {
+                    log.debug("CarbonDataSource '" + dataSourceName + "' not found in registry");
+                }
                 return null;
             }
 
@@ -156,22 +170,34 @@ public class DataSourceProvider {
                     .invoke(carbonDataSource);
 
             if (dsObject instanceof DataSource) {
-                log.debug("DataSource '" + dataSourceName + "' successfully retrieved via OSGi");
+                if (log.isDebugEnabled()) {
+                    log.debug("DataSource '" + dataSourceName + "' successfully retrieved via OSGi");
+                }
                 return (DataSource) dsObject;
             } else if (dsObject != null) {
-                log.error("DSObject is not a DataSource. Type: " + dsObject.getClass().getName());
+                if (log.isDebugEnabled()) {
+                    log.debug("DSObject is not a DataSource. Type: " + dsObject.getClass().getName());
+                }
             } else {
+                if (log.isDebugEnabled()) {
                 log.error("DSObject is null for DataSource: " + dataSourceName);
+                }
             }
 
         } catch (NoSuchMethodException e) {
-            log.error("Method not found - API may have changed: " + e.getMessage(), e);
+            if (log.isDebugEnabled()) {
+                log.debug("Method not found - API may have changed: " + e.getMessage(), e);
+            }
         } catch (java.lang.reflect.InvocationTargetException invocationException) {
             Throwable cause = invocationException.getCause();
             String causeMsg = (cause != null) ? cause.getMessage() : "null";
-            log.error("InvocationTargetException while reflecting DataSource methods: " + causeMsg, cause);
+            if (log.isDebugEnabled()) {
+                log.debug("InvocationTargetException cause: " + causeMsg, cause);
+            }
         } catch (Exception e) {
-            log.debug("Failed to lookup DataSource via OSGi: " + e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("Failed to lookup DataSource via OSGi: " + e.getMessage());
+            }
         }
 
         return null;
@@ -195,8 +221,10 @@ public class DataSourceProvider {
      * Force a refresh of the DataSource (useful for testing or recovery)
      */
     public synchronized void refresh() {
-    log.info("Refreshing DataSource '" + dataSourceName + "'");
-    dataSource = null;
+        if (log.isDebugEnabled()) {
+            log.debug("Forcing DataSource refresh for '" + dataSourceName + "'");
+        }
+        dataSource = null;
     }
 
     public synchronized void close() {

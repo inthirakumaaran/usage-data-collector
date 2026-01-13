@@ -53,7 +53,7 @@ public class UsageDataCollectorServiceComponent {
     // Hardcoded configuration for scheduler
     private static final long INITIAL_DELAY_SECONDS = 600;
     private static final long INTERVAL_SECONDS = 3600;
-    private static final long META_INFO_PUBLISH_DELAY_SECONDS = 300; // 5 minutes
+    private static final long META_INFO_PUBLISH_DELAY_SECONDS = 300;
 
     private ScheduledExecutorService executorService;
     private ScheduledFuture<?> scheduledTask;
@@ -62,8 +62,6 @@ public class UsageDataCollectorServiceComponent {
 
     /**
      * Bind the Publisher.
-     *
-     * @param service the publisher service to set
      */
     @Reference(
         name = "publisher",
@@ -74,12 +72,13 @@ public class UsageDataCollectorServiceComponent {
     )
     protected void setPublisher(Publisher service) {
         this.publisher = service;
+        if (log.isDebugEnabled()) {
+            log.debug("Publisher service bound to UsageDataCollectorServiceComponent");
+        }
     }
 
     /**
      * Unbind the Publisher.
-     *
-     * @param service the publisher service to unset
      */
     protected void unsetPublisher(Publisher service) {
         this.publisher = null;
@@ -89,10 +88,12 @@ public class UsageDataCollectorServiceComponent {
     protected void activate(ComponentContext context) {
         try {
             if (publisher == null) {
-                if(log.isDebugEnabled()) {
-                    log.error("Publisher not available - cannot start usage data collector");
-                }
+                log.error("Publisher not available - cannot start usage data collector");
                 return;
+            }
+            
+            if (log.isDebugEnabled()) {
+                log.debug("Activating Usage Data Collector Service Component");
             }
 
             // Initialize scheduler for both meta information publishing and deployment data collection
@@ -144,6 +145,10 @@ public class UsageDataCollectorServiceComponent {
 
     @Deactivate
     protected void deactivate(ComponentContext context) {
+        if (log.isDebugEnabled()) {
+            log.debug("UsageDataCollectorServiceComponent deactivating - stopping scheduled tasks");
+        }
+        
         // Stop the schedulers
         if (metaInfoPublishTask != null) {
             metaInfoPublishTask.cancel(false);
@@ -156,13 +161,30 @@ public class UsageDataCollectorServiceComponent {
         if (executorService != null) {
             executorService.shutdown();
             try {
-                if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+                // Wait for tasks to complete with a reasonable timeout
+                if (!executorService.awaitTermination(10, TimeUnit.SECONDS)) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("Executor service did not terminate in time, forcing shutdown");
+                    }
                     executorService.shutdownNow();
+                    // Wait a bit more for forced shutdown
+                    if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
+                        if (log.isDebugEnabled()) {
+                            log.debug("Executor service did not terminate after forced shutdown");
+                        }
+                    }
                 }
             } catch (InterruptedException e) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Interrupted while waiting for executor service shutdown");
+                }
                 executorService.shutdownNow();
                 Thread.currentThread().interrupt();
             }
+        }
+        
+        if (log.isDebugEnabled()) {
+            log.debug("UsageDataCollectorServiceComponent deactivated successfully");
         }
     }
 }
