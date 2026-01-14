@@ -16,26 +16,16 @@
  * under the License.
  */
 
-package org.wso2.carbon.usage.data.collector.apim.internal;
+package org.wso2.carbon.usage.data.collector.apim.gateway.internal;
 
 /**
- * Configuration constants for APIM core usage data collector.
- * Provides default values and system property keys.
- *
- * Follows the common module's pattern of centralized configuration.
- * Transaction-related constants are in the gateway-specific bundle.
+ * Configuration constants for APIM Gateway usage data collector.
+ * Contains transaction counting specific constants.
  */
-public class ApimUsageDataCollectorConstants {
-
-    // Database queries
-    public static final String API_COUNT_QUERY =
-            "SELECT COUNT(*) AS api_count FROM AM_API WHERE API_TYPE != 'MCP' OR API_TYPE IS NULL";
-    public static final String MCP_API_COUNT_QUERY =
-            "SELECT COUNT(*) AS mcp_api_count FROM AM_API WHERE API_TYPE = 'MCP'";
+public class GatewayConstants {
 
     // Usage count types
-    public static final String API_COUNT_TYPE = "API_COUNT";
-    public static final String MCP_API_COUNT_TYPE = "MCP_API_COUNT";
+    public static final String TRANSACTION_TYPE = "TRANSACTION";
 
     // Endpoints
     public static final String USAGE_COUNT_ENDPOINT = "receiver/usage-counts";
@@ -43,8 +33,13 @@ public class ApimUsageDataCollectorConstants {
     // Shutdown timeout
     public static final long SHUTDOWN_TIMEOUT_SECONDS = 60;
 
+    // Transaction counter message context properties
+    public static final String IS_INBOUND = "isInbound";
+    public static final String IS_THERE_ASSOCIATED_INCOMING_REQUEST = "is_there_incoming_request";
+    public static final String TRANSPORT_WS = "ws";
+    public static final String TRANSPORT_WSS = "wss";
 
-    private ApimUsageDataCollectorConstants() {
+    private GatewayConstants() {
         // Private constructor to prevent instantiation
     }
 }

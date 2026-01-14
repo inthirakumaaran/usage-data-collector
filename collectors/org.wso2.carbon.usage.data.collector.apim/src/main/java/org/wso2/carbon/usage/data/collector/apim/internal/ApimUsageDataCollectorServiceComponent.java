@@ -30,7 +30,6 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import org.wso2.carbon.usage.data.collector.common.publisher.api.Publisher;
 import org.wso2.carbon.usage.data.collector.apim.collector.apicount.ApiCountCollector;
 import org.wso2.carbon.usage.data.collector.apim.collector.apicount.ApiCountCollectorTask;
-import org.wso2.carbon.usage.data.collector.apim.collector.transaction.counter.TransactionCountHandler;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -39,10 +38,13 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 /**
- * OSGi service component that manages APIM usage data collection.
+ * OSGi service component that manages APIM core usage data collection.
  * This component coordinates:
- * - Transaction count collection (via Synapse handlers)
  * - API count collection (periodic database queries)
+ * - Meta information publishing at startup
+ *
+ * Works in all APIM profiles (control-plane, gateway, traffic-manager).
+ * Transaction counting is handled by separate gateway-specific bundle.
  *
  * Architecture follows the common module's solid implementation pattern.
  */
@@ -74,17 +76,12 @@ public class ApimUsageDataCollectorServiceComponent {
     )
     protected void setPublisher(Publisher service) {
         this.publisher = service;
-
-        // Register publisher with TransactionCountHandler for transaction counting
-        TransactionCountHandler.registerPublisher(service);
     }
 
     /**
      * Unbind the Publisher service.
      */
     protected void unsetPublisher(Publisher service) {
-        // Unregister publisher from TransactionCountHandler
-        TransactionCountHandler.unregisterPublisher(service);
 
         this.publisher = null;
     }
