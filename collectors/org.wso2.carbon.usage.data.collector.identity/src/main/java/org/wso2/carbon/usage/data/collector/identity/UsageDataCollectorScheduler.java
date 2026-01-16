@@ -86,8 +86,8 @@ public class UsageDataCollectorScheduler {
         ScheduleConfig config = new ScheduleConfig();
         try {
             // Check if periodic mode is enabled
-            String UsePeriodicMode = IdentityUtil.getProperty("UsageTracking.Scheduler.UsePeriodicMode");
-            config.isPeriodicMode = Boolean.parseBoolean(UsePeriodicMode);
+            String usePeriodicMode = IdentityUtil.getProperty("UsageTracking.Scheduler.usePeriodicMode");
+            config.isPeriodicMode = Boolean.parseBoolean(usePeriodicMode);
 
             if (config.isPeriodicMode) {
                 // Periodic mode configuration
