@@ -270,7 +270,7 @@ public class UsageDataCollectorServiceComponent {
 
     private void runUsageCollectionTask() {
 
-        if (UsageDataCollectorDataHolder.getInstance().getPlus700()) {
+        if (UsageDataCollectorDataHolder.getInstance().getB2bSupportedISVersion()) {
             UsageDataCollector collectorService = new UsageDataCollector();
             schedulerNew = new UsageDataCollectorScheduler(collectorService);
         } else {
@@ -297,13 +297,15 @@ public class UsageDataCollectorServiceComponent {
                     if (LOG.isDebugEnabled()) {
                         LOG.debug(EXPECTED_COMPONENT_NAME + " is " + version + " - Proceeding with service binding.");
                     }
-                    UsageDataCollectorDataHolder.getInstance().setPlus700(true);
+                    UsageDataCollectorDataHolder.getInstance().isB2BSupportedISVersion(true);
                     consumeService(bundleContext,
                             OrganizationManager.class,
                             UsageDataCollectorDataHolder.getInstance()::setOrganizationManager,
                             "Organization Manager");
                 } else {
-                    LOG.debug(EXPECTED_COMPONENT_NAME + " is " + version + " - Skipping service binding.");
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug(EXPECTED_COMPONENT_NAME + " is " + version + " - Skipping service binding.");
+                    }
                 }
                 break;
             }

@@ -34,7 +34,7 @@ public class UsageDataCollectorDataHolder {
     private RealmService realmService;
     private ConfigurationContextService configContextService;
     private Receiver receiver;
-    private boolean plus700;
+    private boolean b2bSupportedISVersion;
 
     public Receiver getReceiver() {
 
@@ -81,14 +81,14 @@ public class UsageDataCollectorDataHolder {
         this.configContextService = configContextService;
     }
 
-    public void setPlus700(boolean plus700) {
+    public void isB2BSupportedISVersion(boolean b2bSupportedISVersion) {
 
-        this.plus700 = plus700;
+        this.b2bSupportedISVersion = b2bSupportedISVersion;
     }
 
-    public boolean getPlus700() {
+    public boolean getB2bSupportedISVersion() {
 
-        return plus700;
+        return b2bSupportedISVersion;
     }
 
 }
