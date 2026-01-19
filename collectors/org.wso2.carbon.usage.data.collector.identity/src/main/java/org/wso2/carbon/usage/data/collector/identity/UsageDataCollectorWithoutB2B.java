@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, WSO2 LLC. (http://www.wso2.com) All Rights Reserved.
+ * Copyright (c) 2026, WSO2 LLC. (http://www.wso2.com) All Rights Reserved.
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -20,12 +20,10 @@ package org.wso2.carbon.usage.data.collector.identity;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
 import org.wso2.carbon.usage.data.collector.common.publisher.api.model.ApiRequest;
 import org.wso2.carbon.usage.data.collector.common.publisher.api.model.UsageCount;
 import org.wso2.carbon.usage.data.collector.common.util.MetaInfoHolder;
-import org.wso2.carbon.usage.data.collector.identity.counter.OrganizationCounter;
-import org.wso2.carbon.usage.data.collector.identity.counter.UserCounter;
+import org.wso2.carbon.usage.data.collector.identity.counter.UserCounterWithoutB2B;
 import org.wso2.carbon.usage.data.collector.identity.internal.UsageDataCollectorDataHolder;
 import org.wso2.carbon.usage.data.collector.identity.model.SystemUsage;
 import org.wso2.carbon.usage.data.collector.identity.model.TenantUsage;
@@ -38,29 +36,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Main service for collecting usage statistics.
+ * Main service for collecting usage statistics in non b2b environment.
  * Orchestrates the calculator classes to gather system-wide statistics.
  */
-public class UsageDataCollector implements UsageDataCollectorInterface {
+public class UsageDataCollectorWithoutB2B implements UsageDataCollectorInterface {
 
-    private static final Log LOG = LogFactory.getLog(UsageDataCollector.class);
+    private static final Log LOG = LogFactory.getLog(UsageDataCollectorWithoutB2B.class);
     public static final String SUPER_TENANT = "carbon.super";
     public static final String TOTAL_USERS = "TOTAL_USERS";
-    public static final String TOTAL_B2B_ORGS = "TOTAL_B2B_ORGS";
     public static final String TOTAL_ROOT_ORGS = "TOTAL_ROOT_ORGS";
 
     private final RealmService realmService;
-    private final OrganizationManager organizationManager;
-    private final UserCounter userCountCalculator;
-    private final OrganizationCounter orgCountCalculator;
+    private final UserCounterWithoutB2B userCountCalculator;
     private final PublisherImp publisher;
 
-    public UsageDataCollector() {
+    public UsageDataCollectorWithoutB2B() {
 
         this.realmService = UsageDataCollectorDataHolder.getInstance().getRealmService();
-        this.organizationManager = UsageDataCollectorDataHolder.getInstance().getOrganizationManager();
-        this.userCountCalculator = new UserCounter(realmService, organizationManager);
-        this.orgCountCalculator = new OrganizationCounter(organizationManager);
+        this.userCountCalculator = new UserCounterWithoutB2B(realmService);
         this.publisher = new PublisherImp();
     }
 
@@ -102,7 +95,6 @@ public class UsageDataCollector implements UsageDataCollectorInterface {
             }
 
             // Calculate B2B organization count and total users
-            int totalB2BOrgs = 0;
             int totalUsers = 0;
 
             for (String tenantDomain : allTenantDomains) {
@@ -113,13 +105,7 @@ public class UsageDataCollector implements UsageDataCollectorInterface {
                     TenantUsage stats = processTenant(tenantDomain);
 
                     // Add to totals
-                    totalB2BOrgs += stats.getB2bOrgCount();
                     totalUsers += stats.getUserCount();
-
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug(String.format("Processed: %s | B2B Orgs: %d | Users: %d",
-                                tenantDomain, stats.getB2bOrgCount(), stats.getUserCount()));
-                    }
                 } catch (Exception e) {
                     if (LOG.isDebugEnabled()) {
                         LOG.debug("Error processing tenant: " + tenantDomain, e);
@@ -127,7 +113,6 @@ public class UsageDataCollector implements UsageDataCollectorInterface {
                     }
                 }
             }
-            usage.setTotalB2BOrganizations(totalB2BOrgs);
             usage.setTotalUsers(totalUsers);
         } catch (Exception e) {
             if (LOG.isDebugEnabled()) {
@@ -144,27 +129,15 @@ public class UsageDataCollector implements UsageDataCollectorInterface {
     private TenantUsage processTenant(String tenantDomain) {
 
         TenantUsage stats = new TenantUsage(tenantDomain);
-
-        // Use OrganizationCountCalculator to count B2B organizations
-        int b2bOrgCount = orgCountCalculator.countB2BOrganizations(tenantDomain);
-        stats.setB2bOrgCount(b2bOrgCount);
-
-        try {
-            // Use UserCountCalculator to count all users in the tenant
-            int userCount = userCountCalculator.countAllUsersInTenant(tenantDomain);
-            stats.setUserCount(userCount);
-        } catch (Exception e) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Error calculating user count for: " + tenantDomain, e);
-            }
-        }
+        // Use UserCountCalculator to count all users in the tenant
+        int userCount = userCountCalculator.countUsersInOrganization(tenantDomain);
+        stats.setUserCount(userCount);
         return stats;
     }
 
     private void publishUsageMetrics(SystemUsage report) {
 
         publishMetric(report.getTotalUsers(), TOTAL_USERS);
-        publishMetric(report.getTotalB2BOrganizations(), TOTAL_B2B_ORGS);
         publishMetric(report.getRootTenantCount(), TOTAL_ROOT_ORGS);
     }
 

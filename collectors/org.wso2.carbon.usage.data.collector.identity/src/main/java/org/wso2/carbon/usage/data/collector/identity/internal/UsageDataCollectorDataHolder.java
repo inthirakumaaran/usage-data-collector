@@ -34,6 +34,7 @@ public class UsageDataCollectorDataHolder {
     private RealmService realmService;
     private ConfigurationContextService configContextService;
     private Receiver receiver;
+    private boolean b2bSupportedISVersion;
 
     public Receiver getReceiver() {
 
@@ -78,6 +79,16 @@ public class UsageDataCollectorDataHolder {
     public void setConfigurationContextService(ConfigurationContextService configContextService) {
 
         this.configContextService = configContextService;
+    }
+
+    public void isB2BSupportedISVersion(boolean b2bSupportedISVersion) {
+
+        this.b2bSupportedISVersion = b2bSupportedISVersion;
+    }
+
+    public boolean getB2bSupportedISVersion() {
+
+        return b2bSupportedISVersion;
     }
 
 }

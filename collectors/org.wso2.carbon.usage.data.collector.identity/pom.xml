@@ -217,15 +217,13 @@
                             org.wso2.carbon.identity.core; version="${identity.framework.version.range}",
                             org.wso2.carbon.identity.core.util; version="${identity.framework.version.range}",
 
-                            <!-- Identity Organization Management -->
-                            org.wso2.carbon.identity.organization.management.service; version="${org.wso2.carbon.identity.organization.management.core.version.range}",
-
                             <!-- Usage Data Collector Common -->
                             org.wso2.carbon.usage.data.collector.common.publisher.api; version="${collector.common.version.range}",
                             org.wso2.carbon.usage.data.collector.common.publisher.api.model; version="${collector.common.version.range}",
                             org.wso2.carbon.usage.data.collector.common.receiver; version="${collector.common.version.range}",
                             org.wso2.carbon.usage.data.collector.common.util; version="${collector.common.version.range}",
                         </Import-Package>
+                        <DynamicImport-Package>*</DynamicImport-Package>
                     </instructions>
                 </configuration>
             </plugin>
@@ -238,6 +236,48 @@
                     <target>${maven.compiler.target}</target>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <configuration>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>${maven.checkstyleplugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>validate</id>
+                        <phase>validate</phase>
+                        <configuration>
+                            <configLocation>
+                                https://raw.githubusercontent.com/wso2/code-quality-tools/v1.3/checkstyle/checkstyle.xml
+                            </configLocation>
+                            <suppressionsLocation>
+                                https://raw.githubusercontent.com/wso2/code-quality-tools/v1.3/checkstyle/suppressions.xml
+                            </suppressionsLocation>
+                            <encoding>UTF-8</encoding>
+                            <consoleOutput>true</consoleOutput>
+                            <failsOnError>true</failsOnError>
+                            <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                        </configuration>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
+                <version>${spotbugs-maven-plugin.version}</version>
+                <configuration>
+                    <effort>Max</effort>
+                    <threshold>Low</threshold>
+                    <xmlOutput>true</xmlOutput>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
@@ -245,6 +285,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
+        <maven.checkstyleplugin.version>3.1.0</maven.checkstyleplugin.version>
+        <spotbugs-maven-plugin.version>4.8.6.4</spotbugs-maven-plugin.version>
 
         <!-- Plugin Versions -->
         <maven.scr.plugin.version>1.22.0</maven.scr.plugin.version>
@@ -268,7 +310,7 @@
         <apache.common.collection.version>3.2.0.wso2v1</apache.common.collection.version>
         <identity.organization.management.version>1.1.56</identity.organization.management.version>
         <identity.framework.version>7.8.586</identity.framework.version>
-        <identity.framework.version.range>[7.0.0,8.0.0)</identity.framework.version.range>
+        <identity.framework.version.range>[5.0.0,8.0.0)</identity.framework.version.range>
         <axis2.osgi.version.range>[1.6.1.wso2v76, 2.0.0)</axis2.osgi.version.range>
         <commons-lang.wso2.osgi.version.range>[2.6.0,3.0.0)</commons-lang.wso2.osgi.version.range>
         <import.package.version.commons.logging>[1.2.0,2.0.0)</import.package.version.commons.logging>
