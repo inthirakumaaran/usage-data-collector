@@ -28,9 +28,9 @@
     <description>Common module containing Publisher API, Publisher Implementation, and Usage Data Collector</description>
 
     <scm>
-        <url>https://github.com/wso2/usage-data-collector</url>
-        <developerConnection>scm:git:https://github.com/wso2/usage-data-collector.git</developerConnection>
-        <connection>scm:git:https://github.com/wso2/usage-data-collector.git</connection>
+        <url>https://github.com/wso2-enterprise/usage-data-collector</url>
+        <developerConnection>scm:git:https://github.com/wso2-enterprise/usage-data-collector.git</developerConnection>
+        <connection>scm:git:https://github.com/wso2-enterprise/usage-data-collector.git</connection>
         <tag>HEAD</tag>
     </scm>
 

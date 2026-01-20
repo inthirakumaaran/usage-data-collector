@@ -28,9 +28,9 @@
     <description>Core usage data collector for APIM - API count collection (works in all profiles)</description>
 
     <scm>
-        <url>https://github.com/wso2/usage-data-collector</url>
-        <developerConnection>scm:git:https://github.com/wso2/usage-data-collector.git</developerConnection>
-        <connection>scm:git:https://github.com/wso2/usage-data-collector.git</connection>
+        <url>https://github.com/wso2-enterprise/usage-data-collector</url>
+        <developerConnection>scm:git:https://github.com/wso2-enterprise/usage-data-collector.git</developerConnection>
+        <connection>scm:git:https://github.com/wso2-enterprise/usage-data-collector.git</connection>
         <tag>HEAD</tag>
     </scm>
 
