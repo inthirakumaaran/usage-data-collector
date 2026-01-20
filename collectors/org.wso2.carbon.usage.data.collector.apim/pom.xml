@@ -21,7 +21,7 @@
 
     <groupId>org.wso2.carbon</groupId>
     <artifactId>org.wso2.carbon.usage.data.collector.apim</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.6</version>
     <packaging>bundle</packaging>
 
     <name>WSO2 Carbon - APIM Core Usage Data Collector</name>
@@ -31,7 +31,7 @@
         <url>https://github.com/wso2-enterprise/usage-data-collector</url>
         <developerConnection>scm:git:https://github.com/wso2-enterprise/usage-data-collector.git</developerConnection>
         <connection>scm:git:https://github.com/wso2-enterprise/usage-data-collector.git</connection>
-        <tag>HEAD</tag>
+        <tag>v1.0.6</tag>
     </scm>
 
     <distributionManagement>
