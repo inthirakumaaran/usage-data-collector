@@ -30,9 +30,9 @@
     <description>Usage Data Collector for Micro Integrator with scheduler and utility code</description>
 
     <scm>
-        <url>https://github.com/wso2/usage-data-collector</url>
-        <developerConnection>scm:git:https://github.com/wso2/usage-data-collector.git</developerConnection>
-        <connection>scm:git:https://github.com/wso2/usage-data-collector.git</connection>
+        <url>https://github.com/wso2-enterprise/usage-data-collector</url>
+        <developerConnection>scm:git:https://github.com/wso2-enterprise/usage-data-collector.git</developerConnection>
+        <connection>scm:git:https://github.com/wso2-enterprise/usage-data-collector.git</connection>
         <tag>HEAD</tag>
     </scm>
 
