@@ -21,7 +21,7 @@
 
     <groupId>org.wso2.carbon</groupId>
     <artifactId>org.wso2.carbon.usage.data.collector.identity</artifactId>
-    <version>1.0.5-SNAPSHOT</version>
+    <version>is-1.0.5</version>
     <packaging>bundle</packaging>
 
     <name>WSO2 Carbon - Identity Server Usage Data Collector</name>
@@ -31,7 +31,7 @@
         <url>https://github.com/wso2-enterprise/usage-data-collector</url>
         <developerConnection>scm:git:https://github.com/wso2-enterprise/usage-data-collector.git</developerConnection>
         <connection>scm:git:https://github.com/wso2-enterprise/usage-data-collector.git</connection>
-        <tag>HEAD</tag>
+        <tag>vis-1.0.5</tag>
     </scm>
 
     <repositories>
@@ -283,41 +283,36 @@
                             <target>
                                 <!-- Use Ant's built-in string operations -->
                                 <loadresource property="stripped.version">
-                                    <propertyresource name="project.version"/>
+                                    <propertyresource name="project.version" />
                                     <filterchain>
                                         <tokenfilter>
-                                            <replacestring from="is-" to=""/>
+                                            <replacestring from="is-" to="" />
                                         </tokenfilter>
                                     </filterchain>
                                 </loadresource>
 
                                 <!-- Check if version has 'is-' prefix -->
                                 <condition property="has.prefix">
-                                    <contains string="${project.version}" substring="is-"/>
+                                    <contains string="${project.version}" substring="is-" />
                                 </condition>
 
-                                <echo message="Original version: ${project.version}"/>
-                                <echo message="Stripped version: ${stripped.version}"/>
-                                <echo message="Has 'is-' prefix: ${has.prefix}"/>
+                                <echo message="Original version: ${project.version}" />
+                                <echo message="Stripped version: ${stripped.version}" />
+                                <echo message="Has 'is-' prefix: ${has.prefix}" />
 
                                 <!-- Only rename if prefix exists -->
-                                <sequential if:set="has.prefix" xmlns:if="ant:if">
+                                <sequential xmlns:if="ant:if" if:set="has.prefix">
                                     <!-- Rename the jar -->
-                                    <move file="${project.build.directory}/${project.artifactId}-${project.version}.jar"
-                                          tofile="${project.build.directory}/${project.artifactId}-${stripped.version}.jar"
-                                          failonerror="true"/>
+                                    <move file="${project.build.directory}/${project.artifactId}-${project.version}.jar" tofile="${project.build.directory}/${project.artifactId}-${stripped.version}.jar" failonerror="true" />
 
                                     <!-- Copy it back with original name for Maven to find it -->
-                                    <copy file="${project.build.directory}/${project.artifactId}-${stripped.version}.jar"
-                                          tofile="${project.build.directory}/${project.artifactId}-${project.version}.jar"/>
+                                    <copy file="${project.build.directory}/${project.artifactId}-${stripped.version}.jar" tofile="${project.build.directory}/${project.artifactId}-${project.version}.jar" />
 
-                                    <echo message="Created both versions of jar file!"/>
+                                    <echo message="Created both versions of jar file!" />
                                 </sequential>
 
-                                <echo if:set="has.prefix" xmlns:if="ant:if"
-                                      message="Artifact renamed successfully!"/>
-                                <echo unless:set="has.prefix" xmlns:unless="ant:unless"
-                                      message="No 'is-' prefix found, skipping rename operation."/>
+                                <echo xmlns:if="ant:if" if:set="has.prefix" message="Artifact renamed successfully!" />
+                                <echo xmlns:unless="ant:unless" unless:set="has.prefix" message="No 'is-' prefix found, skipping rename operation." />
                             </target>
                         </configuration>
                     </execution>
@@ -331,20 +326,17 @@
                             <target>
                                 <!-- Check if version has 'is-' prefix -->
                                 <condition property="has.prefix.cleanup">
-                                    <contains string="${project.version}" substring="is-"/>
+                                    <contains string="${project.version}" substring="is-" />
                                 </condition>
 
                                 <!-- Only cleanup if prefix exists -->
-                                <sequential if:set="has.prefix.cleanup" xmlns:if="ant:if">
-                                    <echo message="Cleaning up jar with 'is-' prefix..."/>
-                                    <delete file="${project.build.directory}/${project.artifactId}-${project.version}.jar"
-                                            failonerror="false"
-                                            verbose="true"/>
-                                    <echo message="Cleanup complete. Only stripped version jar remains."/>
+                                <sequential xmlns:if="ant:if" if:set="has.prefix.cleanup">
+                                    <echo message="Cleaning up jar with 'is-' prefix..." />
+                                    <delete file="${project.build.directory}/${project.artifactId}-${project.version}.jar" failonerror="false" verbose="true" />
+                                    <echo message="Cleanup complete. Only stripped version jar remains." />
                                 </sequential>
 
-                                <echo unless:set="has.prefix.cleanup" xmlns:unless="ant:unless"
-                                      message="No 'is-' prefix detected, skipping cleanup."/>
+                                <echo xmlns:unless="ant:unless" unless:set="has.prefix.cleanup" message="No 'is-' prefix detected, skipping cleanup." />
                             </target>
                         </configuration>
                     </execution>
