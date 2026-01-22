@@ -237,6 +237,7 @@
         <imp.package.version.synapse>[2.1, 5.0)</imp.package.version.synapse>
         <imp.package.version.httpcomponents>[4.3.0, 5.0.0)</imp.package.version.httpcomponents>
         <common.collector.version.range>[1.0.0, 2.0.0)</common.collector.version.range>
+        <project.scm.id>my-scm-server</project.scm.id>
     </properties>
 
     <repositories>
