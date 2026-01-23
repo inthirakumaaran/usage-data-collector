@@ -61,9 +61,6 @@ public class TransactionCountHandlerComponent extends AbstractExtendedSynapseHan
     @Activate
     protected void activate() {
         try {
-            if (log.isDebugEnabled()) {
-                log.debug("Activating TransactionCountHandler OSGi component");
-            }
             
             // Create the handler instance
             handler = new TransactionCountHandler();
@@ -72,17 +69,13 @@ public class TransactionCountHandlerComponent extends AbstractExtendedSynapseHan
             if (transactionPublisher != null) {
                 handler.setPublisher(transactionPublisher);
                 if (log.isDebugEnabled()) {
-                    log.debug("TransactionCountHandler registered with TransactionPublisher");
-                }
+                log.debug("TransactionCountHandler activated successfully");
+            }
             } else {
                 if (log.isDebugEnabled()) {
                     log.debug("TransactionPublisher not available during activation. " +
                         "Handler will be initialized when publisher becomes available.");
                 }
-            }
-            
-            if (log.isDebugEnabled()) {
-                log.debug("TransactionCountHandler component activated successfully");
             }
         } catch (Exception e) {
             if (log.isDebugEnabled()) {
@@ -94,21 +87,14 @@ public class TransactionCountHandlerComponent extends AbstractExtendedSynapseHan
     @Deactivate
     protected void deactivate() {
         try {
-            if (log.isDebugEnabled()) {
-                log.debug("Deactivating TransactionCountHandler OSGi component");
-            }
-            
             // Unregister the publisher
             if (transactionPublisher != null && handler != null) {
                 handler.unsetPublisher(transactionPublisher);
-                if (log.isDebugEnabled()) {
-                    log.debug("TransactionCountHandler unregistered from TransactionPublisher");
-                }
             }
             
             handler = null;
             if (log.isDebugEnabled()) {
-                log.debug("TransactionCountHandler component deactivated successfully");
+                log.debug("TransactionCountHandler deactivated successfully");
             }
         } catch (Exception e) {
             if (log.isDebugEnabled()) {
@@ -132,7 +118,7 @@ public class TransactionCountHandlerComponent extends AbstractExtendedSynapseHan
     protected void setTransactionPublisher(TransactionPublisher publisher) {
         try {
             if (log.isDebugEnabled()) {
-                log.debug("TransactionPublisher service bound to TransactionCountHandler component");
+                log.debug("TransactionPublisher service successfully bounded");
             }
             this.transactionPublisher = publisher;
             
@@ -157,19 +143,13 @@ public class TransactionCountHandlerComponent extends AbstractExtendedSynapseHan
      */
     protected void unsetTransactionPublisher(TransactionPublisher publisher) {
         try {
-            if (log.isDebugEnabled()) {
-                log.debug("TransactionPublisher service unbound from TransactionCountHandler component");
-            }
-            
             if (this.transactionPublisher == publisher) {
                 if (handler != null) {
                     handler.unsetPublisher(publisher);
                 }
                 this.transactionPublisher = null;
-                if (log.isDebugEnabled()) {
-                    log.debug("TransactionCountHandler unregistered from TransactionPublisher");
-                }
             }
+            
         } catch (Exception e) {
             if (log.isDebugEnabled()) {
                 log.debug("Error unbinding TransactionPublisher from TransactionCountHandler", e);

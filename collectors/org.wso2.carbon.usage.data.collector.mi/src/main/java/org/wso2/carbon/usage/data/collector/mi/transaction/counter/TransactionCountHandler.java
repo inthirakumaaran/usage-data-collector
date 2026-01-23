@@ -93,9 +93,6 @@ public class TransactionCountHandler extends AbstractExtendedSynapseHandler {
         if (this.publisher == publisher) {
             this.publisher = null;
             this.enabled = false;
-            if (log.isDebugEnabled()) {
-                log.debug("TransactionCountHandler unregistered from publisher");
-            }
         }
     }
 
@@ -120,15 +117,8 @@ public class TransactionCountHandler extends AbstractExtendedSynapseHandler {
 
     @Override
     public boolean handleServerShutDown() {
-        if (log.isDebugEnabled()) {
-            log.debug("Shutting down Transaction Counter...");
-        }
-        // Clean up resources
         if (transactionAggregator != null && transactionAggregator.isEnabled()) {
             transactionAggregator.shutdown();
-        }
-        if (log.isDebugEnabled()) {
-            log.debug("Transaction Counter shutdown completed");
         }
         return true;
     }
