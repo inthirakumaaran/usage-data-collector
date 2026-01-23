@@ -24,7 +24,7 @@ package org.wso2.carbon.usage.data.collector.mi.publisher;
 public class PublisherConstants {
     
     // DataSource configuration
-    public static final String DATASOURCE_NAME = "WSO2_CONSUMPTION_TRACKING_DB";
+    public static final String DATASOURCE_NAME = "consumptiondb";
     
     // Timeout configuration
     public static final int DEFAULT_TIMEOUT_MS = 5000;
