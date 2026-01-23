@@ -117,12 +117,16 @@ public class TransactionPublisherImpl implements TransactionPublisher {
     )
     protected void setPublisher(Publisher publisher) {
         this.publisher = publisher;
-        log.info("Publisher service bound to TransactionPublisherImpl - Transaction publishing is now enabled");
+        if (log.isDebugEnabled()) {
+            log.debug("Publisher service bound to TransactionPublisherImpl - Transaction publishing is now enabled");
+        }
     }
 
     protected void unsetPublisher(Publisher publisher) {
         this.publisher = null;
-        log.info("Publisher service unbound from TransactionPublisherImpl - Transaction publishing is now disabled");
+        if (log.isDebugEnabled()) {
+            log.debug("Publisher service unbound from TransactionPublisherImpl - Transaction publishing is now disabled");
+        }
     }
 
     @Override
