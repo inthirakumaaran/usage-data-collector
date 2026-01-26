@@ -1,0 +1,223 @@
+name: Release Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'Package to release'
+        required: true
+        type: choice
+        options:
+          - common
+          - apim
+          - mi
+          - identity
+      release-version:
+        description: 'Release version (e.g., 1.0.10)'
+        required: true
+        type: string
+      next-snapshot-version:
+        description: 'Next development version (e.g., 1.0.11-SNAPSHOT) - leave empty for auto-increment'
+        required: false
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: 'maven'
+      
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      
+      - name: Set package configuration
+        id: config
+        run: |
+          case "${{ inputs.package }}" in
+            common)
+              echo "base-path=collectors/org.wso2.carbon.usage.data.collector.common" >> $GITHUB_OUTPUT
+              echo "artifact-id=org.wso2.carbon.usage.data.collector.common" >> $GITHUB_OUTPUT
+              echo "module-name=collector-common" >> $GITHUB_OUTPUT
+              ;;
+            apim)
+              echo "base-path=collectors/org.wso2.carbon.usage.data.collector.apim" >> $GITHUB_OUTPUT
+              echo "artifact-id=org.wso2.carbon.usage.data.collector.apim" >> $GITHUB_OUTPUT
+              echo "module-name=collector-apim" >> $GITHUB_OUTPUT
+              ;;
+            mi)
+              echo "base-path=collectors/org.wso2.carbon.usage.data.collector.mi" >> $GITHUB_OUTPUT
+              echo "artifact-id=org.wso2.carbon.usage.data.collector.mi" >> $GITHUB_OUTPUT
+              echo "module-name=collector-mi" >> $GITHUB_OUTPUT
+              ;;
+            identity)
+              echo "base-path=collectors/org.wso2.carbon.usage.data.collector.identity" >> $GITHUB_OUTPUT
+              echo "artifact-id=org.wso2.carbon.usage.data.collector.identity" >> $GITHUB_OUTPUT
+              echo "module-name=collector-identity" >> $GITHUB_OUTPUT
+              ;;
+          esac
+      
+      - name: Validate release version format
+        run: |
+          if [[ ! "${{ inputs.release-version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: Release version must be in format X.Y.Z (e.g., 1.0.10)"
+            exit 1
+          fi
+      
+      - name: Calculate next snapshot version
+        id: next-version
+        run: |
+          RELEASE_VERSION="${{ inputs.release-version }}"
+          
+          if [ -n "${{ inputs.next-snapshot-version }}" ]; then
+            NEXT_VERSION="${{ inputs.next-snapshot-version }}"
+          else
+            IFS='.' read -r -a parts <<< "$RELEASE_VERSION"
+            NEXT_VERSION="${parts[0]}.${parts[1]}.$((parts[2] + 1))-SNAPSHOT"
+          fi
+          
+          echo "next=$NEXT_VERSION" >> $GITHUB_OUTPUT
+          echo "Next development version: $NEXT_VERSION"
+      
+      - name: Get current version
+        id: current-version
+        run: |
+          cd ${{ steps.config.outputs.base-path }}
+          CURRENT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "current=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "Current version in pom.xml: $CURRENT_VERSION"
+      
+      - name: Check if tag already exists
+        id: check-tag
+        run: |
+          TAG="${{ steps.config.outputs.module-name }}-${{ inputs.release-version }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Warning: Tag $TAG already exists locally"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+      
+      - name: Delete existing tag if present
+        if: steps.check-tag.outputs.exists == 'true'
+        run: |
+          TAG="${{ steps.check-tag.outputs.tag }}"
+          echo "Deleting existing tag: $TAG"
+          git tag -d "$TAG" || true
+          git push --delete origin "$TAG" 2>/dev/null || echo "Remote tag doesn't exist or already deleted"
+      
+      - name: Set release version in pom.xml
+        run: |
+          cd ${{ steps.config.outputs.base-path }}
+          echo "Setting version to ${{ inputs.release-version }}"
+          mvn versions:set -DnewVersion=${{ inputs.release-version }} -DgenerateBackupPoms=false
+      
+      - name: Commit release version
+        run: |
+          git add ${{ steps.config.outputs.base-path }}/pom.xml
+          git commit -m "chore(${{ inputs.package }}): prepare release ${{ inputs.release-version }}" || echo "No changes to commit"
+      
+      - name: Build and test
+        run: |
+          cd ${{ steps.config.outputs.base-path }}
+          mvn clean verify
+      
+      - name: Package artifact
+        run: |
+          cd ${{ steps.config.outputs.base-path }}
+          mvn package -DskipTests
+      
+      - name: Verify artifact exists
+        id: verify-artifact
+        run: |
+          JAR_FILE="${{ steps.config.outputs.base-path }}/target/${{ steps.config.outputs.artifact-id }}-${{ inputs.release-version }}.jar"
+          if [ ! -f "$JAR_FILE" ]; then
+            echo "Error: Artifact not found at $JAR_FILE"
+            echo "Contents of target directory:"
+            ls -la ${{ steps.config.outputs.base-path }}/target/
+            exit 1
+          fi
+          echo "jar-file=$JAR_FILE" >> $GITHUB_OUTPUT
+          echo "Artifact verified: $JAR_FILE"
+      
+      - name: Create and push release tag
+        run: |
+          TAG="${{ steps.check-tag.outputs.tag }}"
+          git tag -a "$TAG" -m "Release ${{ steps.config.outputs.module-name }} version ${{ inputs.release-version }}"
+          git push origin "$TAG"
+          echo "Tag $TAG created and pushed"
+      
+      - name: Bump to next snapshot version
+        run: |
+          cd ${{ steps.config.outputs.base-path }}
+          echo "Bumping version to ${{ steps.next-version.outputs.next }}"
+          mvn versions:set -DnewVersion=${{ steps.next-version.outputs.next }} -DgenerateBackupPoms=false
+      
+      - name: Commit and push next snapshot version
+        run: |
+          git add ${{ steps.config.outputs.base-path }}/pom.xml
+          git commit -m "chore(${{ inputs.package }}): prepare for next development iteration ${{ steps.next-version.outputs.next }}"
+          git push origin main
+          echo "Next snapshot version committed and pushed"
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.check-tag.outputs.tag }}
+          name: ${{ steps.config.outputs.module-name }} v${{ inputs.release-version }}
+          body: |
+            ## Release ${{ steps.config.outputs.module-name }} v${{ inputs.release-version }}
+            
+            ### Changes
+            - Previous version: ${{ steps.current-version.outputs.current }}
+            - Released version: ${{ inputs.release-version }}
+            - Next development version: ${{ steps.next-version.outputs.next }}
+            
+            ### Artifact
+            - GroupId: org.wso2.carbon
+            - ArtifactId: ${{ steps.config.outputs.artifact-id }}
+            - Version: ${{ inputs.release-version }}
+            
+            ### Installation
+            Download the JAR file from the assets below.
+          files: |
+            ${{ steps.verify-artifact.outputs.jar-file }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Release Summary
+        run: |
+          echo "## 🚀 Release Completed Successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Package | \`${{ inputs.package }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Module | \`${{ steps.config.outputs.module-name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Previous Version | \`${{ steps.current-version.outputs.current }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Released Version | \`${{ inputs.release-version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Git Tag | \`${{ steps.check-tag.outputs.tag }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Next Dev Version | \`${{ steps.next-version.outputs.next }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "JAR file has been attached to the GitHub release" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Release URL" >> $GITHUB_STEP_SUMMARY
+          echo "[View Release](https://github.com/${{ github.repository }}/releases/tag/${{ steps.check-tag.outputs.tag }})" >> $GITHUB_STEP_SUMMARY
