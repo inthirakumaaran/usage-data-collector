@@ -64,8 +64,8 @@ jobs:
               echo "module-name=collector-apim" >> $GITHUB_OUTPUT
               ;;
             apim-gateway)
-              echo "base-path=collectors/org.wso2.carbon.usage.data.collector.apim.gateway" >> $GITHUB_OUTPUT
-              echo "artifact-id=org.wso2.carbon.usage.data.collector.apim.gateway" >> $GITHUB_OUTPUT
+              echo "base-path=collectors/org.wso2.carbon.usage.data.collector.apim-gateway" >> $GITHUB_OUTPUT
+              echo "artifact-id=org.wso2.carbon.usage.data.collector.apim-gateway" >> $GITHUB_OUTPUT
               echo "module-name=collector-apim-gateway" >> $GITHUB_OUTPUT
               ;;
             mi)
