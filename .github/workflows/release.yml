@@ -17,12 +17,18 @@ on:
         description: 'Release version (e.g., 1.0.10)'
         required: true
         type: string
+      create-pr-for-version-bump:
+        description: 'Create Pull Request for version bump (instead of direct commit)'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
       
     steps:
       - name: Checkout code
@@ -168,12 +174,42 @@ jobs:
           echo "Bumping version to ${{ steps.next-version.outputs.next }}"
           mvn versions:set -DnewVersion=${{ steps.next-version.outputs.next }} -DgenerateBackupPoms=false
       
-      - name: Commit and push next snapshot version
+      - name: Commit and push next snapshot version (Direct)
+        if: ${{ !inputs.create-pr-for-version-bump }}
         run: |
           git add ${{ steps.config.outputs.base-path }}/pom.xml
           git commit -m "[GIT Action Release] Prepare for next development iteration ${{ inputs.package }}-${{ steps.next-version.outputs.next }}"
           git push origin main
-          echo "Next snapshot version committed and pushed"
+          echo "Next snapshot version committed and pushed to main"
+      
+      - name: Create Pull Request for version bump
+        if: ${{ inputs.create-pr-for-version-bump }}
+        id: create-pr
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: '[GIT Action Release] Prepare for next development iteration ${{ inputs.package }}-${{ steps.next-version.outputs.next }}'
+          branch: release/${{ inputs.package }}-${{ inputs.release-version }}-bump
+          delete-branch: true
+          title: '[GIT Action Release] Bump ${{ inputs.package }} version to ${{ steps.next-version.outputs.next }}'
+          body: |
+            ## Version Bump After Release
+            
+            This PR bumps the version to `${{ steps.next-version.outputs.next }}` after releasing `${{ inputs.release-version }}`.
+            
+            ### Changes
+            - **Package:** `${{ inputs.package }}`
+            - **Released Version:** `${{ inputs.release-version }}`
+            - **Next Version:** `${{ steps.next-version.outputs.next }}`
+            - **Previous Version:** `${{ steps.current-version.outputs.current }}`
+            
+            **This PR was automatically created by GIT Action Release.**
+            
+            Please review and merge to complete the release process.
+          labels: |
+            automated
+            version-bump
+            git-action-release
       
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
@@ -220,5 +256,14 @@ jobs:
           echo "### 📦 Artifacts" >> $GITHUB_STEP_SUMMARY
           echo "JAR file has been attached to the GitHub release" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🔗 Release URL" >> $GITHUB_STEP_SUMMARY
-          echo "[View Release](https://github.com/${{ github.repository }}/releases/tag/${{ steps.check-tag.outputs.tag }})" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
+          echo "- [View Release](https://github.com/${{ github.repository }}/releases/tag/${{ steps.check-tag.outputs.tag }})" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ inputs.create-pr-for-version-bump }}" == "true" ]; then
+            echo "- [View Version Bump PR](${{ steps.create-pr.outputs.pull-request-url }})" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Note:** A Pull Request has been created for the version bump. Please review and merge it." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Note:** Version bump was committed directly to main branch." >> $GITHUB_STEP_SUMMARY
+          fi
