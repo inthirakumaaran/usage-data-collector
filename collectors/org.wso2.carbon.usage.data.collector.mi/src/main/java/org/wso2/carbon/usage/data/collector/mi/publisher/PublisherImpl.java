@@ -40,6 +40,7 @@ import org.wso2.carbon.usage.data.collector.common.publisher.api.model.UsageCoun
 import org.wso2.carbon.usage.data.collector.common.receiver.Receiver;
 import org.wso2.carbon.usage.data.collector.mi.datasource.DataSourceProvider;
 import org.wso2.carbon.usage.data.collector.mi.internal.UsageDataCollectorDataHolder;
+import org.wso2.carbon.usage.data.collector.common.publisher.PublisherConstants;
 
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
