@@ -48,14 +48,14 @@ public class TransactionPublisherImpl implements TransactionPublisher {
     @Activate
     protected void activate() {
         if (log.isDebugEnabled()) {
-            log.debug("TransactionPublisherImpl OSGi component activated");
+            log.debug("TransactionPublisher activated");
         }
     }
 
     @Deactivate
     protected void deactivate() {
         if (log.isDebugEnabled()) {
-            log.debug("TransactionPublisherImpl OSGi component deactivated");
+            log.debug("TransactionPublisher deactivated");
         }
     }
 
@@ -117,12 +117,13 @@ public class TransactionPublisherImpl implements TransactionPublisher {
     )
     protected void setPublisher(Publisher publisher) {
         this.publisher = publisher;
-        log.info("Publisher service bound to TransactionPublisherImpl - Transaction publishing is now enabled");
+        if (log.isDebugEnabled()) {
+            log.debug("Publisher service bound to TransactionPublisher");
+        }
     }
 
     protected void unsetPublisher(Publisher publisher) {
         this.publisher = null;
-        log.info("Publisher service unbound from TransactionPublisherImpl - Transaction publishing is now disabled");
     }
 
     @Override

@@ -63,50 +63,25 @@ public class PublisherImpl implements Publisher {
     @Activate
     protected void activate() {
         if (log.isDebugEnabled()) {
-            log.debug("PublisherImpl OSGi component activated - Publisher service is now available");
+            log.debug("Publisher activated");
         }
     }
 
     @Deactivate
     protected void deactivate() {
-        if (log.isDebugEnabled()) {
-            log.debug("PublisherImpl OSGi component deactivating - shutting down gracefully");
-        }
         
         // Set shutdown flag to prevent new operations
         isShuttingDown = true;
         
-        // Wait for in-flight async operations to complete
-        // UsageDataProcessor spawns background threads that may still be using HttpClient
         try {
-            if (log.isDebugEnabled()) {
-                log.debug("Waiting for in-flight async operations to complete...");
-            }
-            Thread.sleep(3000); // Wait 3 seconds for background threads to finish
-            if (log.isDebugEnabled()) {
-                log.debug("Wait period completed");
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            if (log.isDebugEnabled()) {
-                log.debug("Interrupted while waiting for async operations", e);
-            }
-        }
-        
-        try {
-            // Close HttpClient after background threads have had time to complete
             httpClient.close();
             if (log.isDebugEnabled()) {
-                log.debug("HttpClient closed successfully");
+                log.debug("Publisher deactivated and HttpClient closed");
             }
         } catch (Exception e) {
             if (log.isDebugEnabled()) {
                 log.debug("Error closing shared HttpClient", e);
             }
-        }
-        
-        if (log.isDebugEnabled()) {
-            log.debug("PublisherImpl OSGi component deactivated");
         }
     }
 
@@ -120,15 +95,12 @@ public class PublisherImpl implements Publisher {
     protected void setReceiver(Receiver receiver) {
         UsageDataCollectorDataHolder.getInstance().setReceiver(receiver);
         if (log.isDebugEnabled()) {
-            log.debug("Receiver service bound to PublisherImpl");
+            log.debug("Transaction Receiver bounded");
         }
     }
 
     protected void unsetReceiver(Receiver receiver) {
         UsageDataCollectorDataHolder.getInstance().setReceiver(null);
-        if (log.isDebugEnabled()) {
-            log.debug("Receiver service unbound from PublisherImpl");
-        }
     }
 
     private static final Log log = LogFactory.getLog(PublisherImpl.class);
@@ -246,9 +218,6 @@ public class PublisherImpl implements Publisher {
     private ApiResponse processDeploymentInformation(Object data) throws PublisherException {
         // Reject new operations during shutdown
         if (isShuttingDown) {
-            if (log.isDebugEnabled()) {
-                log.debug("Rejecting deployment information processing - component is shutting down");
-            }
             return ApiResponse.failure(503, "Service is shutting down");
         }
         
@@ -286,9 +255,6 @@ public class PublisherImpl implements Publisher {
     private ApiResponse processMetaInformation(Object data) throws PublisherException {
         // Reject new operations during shutdown
         if (isShuttingDown) {
-            if (log.isDebugEnabled()) {
-                log.debug("Rejecting meta information processing - component is shutting down");
-            }
             return ApiResponse.failure(503, "Service is shutting down");
         }
         

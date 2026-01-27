@@ -57,7 +57,7 @@ public interface Publisher {
      * Examples:
      * - WSO2 APIM: DataSource from "jdbc/WSO2AM_DB"
      * - WSO2 IS: DataSource from "jdbc/WSO2CARBON_DB"
-     * - WSO2 MI: DataSource from "jdbc/WSO2_CONSUMPTION_TRACKING_DB"
+     * - WSO2 MI: DataSource from "jdbc/consumptiondb"
      *
      * @return The DataSource for database operations
      * @throws PublisherException If the DataSource cannot be retrieved
