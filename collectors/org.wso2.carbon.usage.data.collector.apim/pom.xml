@@ -21,7 +21,7 @@
 
     <groupId>org.wso2.carbon</groupId>
     <artifactId>org.wso2.carbon.usage.data.collector.apim</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
     <packaging>bundle</packaging>
 
     <name>WSO2 Carbon - APIM Core Usage Data Collector</name>
