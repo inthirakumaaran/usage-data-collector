@@ -18,6 +18,10 @@
 
 package org.wso2.carbon.usage.data.collector.mi.transaction.counter;
 
+/**
+ * Constants used for transaction counting logic.
+ * Contains property keys and transport identifiers for message context processing.
+ */
 public class TransactionCounterConstants {
     public static final String IS_INBOUND = "isInbound";
 

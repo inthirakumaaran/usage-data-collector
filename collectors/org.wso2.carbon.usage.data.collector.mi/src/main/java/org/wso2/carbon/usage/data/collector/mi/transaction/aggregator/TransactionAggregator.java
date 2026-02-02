@@ -28,6 +28,10 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * Aggregates transaction counts and publishes them periodically.
+ * This class uses a singleton pattern to ensure only one aggregator exists per JVM.
+ */
 public class TransactionAggregator {
 
     private static final Log log = LogFactory.getLog(TransactionAggregator.class);
