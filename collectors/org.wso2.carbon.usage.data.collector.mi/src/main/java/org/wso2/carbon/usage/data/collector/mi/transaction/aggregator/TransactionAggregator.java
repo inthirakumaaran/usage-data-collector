@@ -28,17 +28,22 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * Aggregates transaction counts and publishes them periodically.
+ * This class uses a singleton pattern to ensure only one aggregator exists per JVM.
+ */
 public class TransactionAggregator {
 
     private static final Log log = LogFactory.getLog(TransactionAggregator.class);
     private static volatile TransactionAggregator instance = null;
-    
+
     private final AtomicLong hourlyTransactionCount = new AtomicLong(0);
     private TransactionPublisher publisher;
     private ScheduledExecutorService scheduledExecutorService;
     private boolean enabled = false;
 
-    private TransactionAggregator() {}
+    private TransactionAggregator() {
+    }
 
     public static TransactionAggregator getInstance() {
         if (instance == null) {
@@ -50,7 +55,7 @@ public class TransactionAggregator {
         }
         return instance;
     }
-    
+
     public void init(TransactionPublisher publisher) {
         if (publisher == null) {
             if (log.isDebugEnabled()) {
@@ -94,13 +99,13 @@ public class TransactionAggregator {
 
         long interval = 60 * 60 * 1000L;
         try {
-        scheduledExecutorService.scheduleAtFixedRate(
-                this::publishAndReset,
-                interval,
-                interval,
-                TimeUnit.MILLISECONDS
-        );
-        this.enabled = true;
+            scheduledExecutorService.scheduleAtFixedRate(
+                    this::publishAndReset,
+                    interval,
+                    interval,
+                    TimeUnit.MILLISECONDS
+            );
+            this.enabled = true;
         } catch (Exception e) {
             if (log.isDebugEnabled()) {
                 log.error("TransactionAggregator: Failed to schedule periodic task", e);
@@ -120,12 +125,12 @@ public class TransactionAggregator {
     private void publishAndReset() {
         try {
             long count = hourlyTransactionCount.getAndSet(0);
-            
+
             // Always send transaction report, even when count is zero
             TransactionReport summary = new TransactionReport(count);
-            
+
             publisher.publishTransaction(summary);
-            
+
         } catch (Exception e) {
             if (log.isDebugEnabled()) {
                 log.error("TransactionAggregator: Error while publishing hourly transaction count", e);
@@ -148,7 +153,7 @@ public class TransactionAggregator {
     public void shutdown() {
         if (scheduledExecutorService != null) {
             publishAndReset();
-            
+
             scheduledExecutorService.shutdownNow();
             try {
                 if (!scheduledExecutorService.awaitTermination(5, TimeUnit.SECONDS)) {

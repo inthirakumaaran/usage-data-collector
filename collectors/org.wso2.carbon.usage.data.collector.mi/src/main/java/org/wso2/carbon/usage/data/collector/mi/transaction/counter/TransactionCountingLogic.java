@@ -21,6 +21,10 @@ package org.wso2.carbon.usage.data.collector.mi.transaction.counter;
 import org.apache.synapse.MessageContext;
 import org.apache.synapse.core.axis2.Axis2MessageContext;
 
+/**
+ * Contains logic for counting transactions in the Micro Integrator.
+ * Determines whether a message should be counted as a transaction based on message context properties.
+ */
 public class TransactionCountingLogic {
 
     public static int handleRequestInFlow(MessageContext messageContext) {
@@ -43,7 +47,7 @@ public class TransactionCountingLogic {
                 String transport = axis2MessageContext.getIncomingTransportName();
                 if (transport != null &&
                         (transport.equals(TransactionCounterConstants.TRANSPORT_WS) ||
-                        transport.equals(TransactionCounterConstants.TRANSPORT_WSS))) {
+                                transport.equals(TransactionCounterConstants.TRANSPORT_WSS))) {
                     return 1;
                 }
             }

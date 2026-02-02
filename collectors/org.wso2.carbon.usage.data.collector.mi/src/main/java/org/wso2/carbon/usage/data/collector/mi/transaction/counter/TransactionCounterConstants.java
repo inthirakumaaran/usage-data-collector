@@ -18,6 +18,10 @@
 
 package org.wso2.carbon.usage.data.collector.mi.transaction.counter;
 
+/**
+ * Constants used for transaction counting logic.
+ * Contains property keys and transport identifiers for message context processing.
+ */
 public class TransactionCounterConstants {
     public static final String IS_INBOUND = "isInbound";
 
@@ -28,7 +32,8 @@ public class TransactionCounterConstants {
     public static final String SERVER_ID = "serverId";
 
     // OSGi Component Constants
-    public static final String COMPONENT_NAME = "org.wso2.carbon.usage.data.collector.mi.transaction.counter.handler.component";
+    public static final String COMPONENT_NAME =
+            "org.wso2.carbon.usage.data.collector.mi.transaction.counter.handler.component";
     public static final String HANDLER_NAME_PROPERTY = "handler.name=TransactionCountHandler";
     public static final String HANDLER_ENABLED_PROPERTY = "handler.enabled=true";
     public static final String TRANSACTION_PUBLISHER_REFERENCE = "transaction.publisher";

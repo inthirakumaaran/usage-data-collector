@@ -31,10 +31,10 @@ import org.wso2.carbon.usage.data.collector.mi.transaction.publisher.Transaction
  */
 public class TransactionCountHandler extends AbstractExtendedSynapseHandler {
     private static final Log log = LogFactory.getLog(TransactionCountHandler.class);
+    private static TransactionCountHandler instance;
     private TransactionAggregator transactionAggregator;
     private TransactionPublisher publisher;
     private volatile boolean enabled = false;
-    private static TransactionCountHandler instance;
 
     public TransactionCountHandler() {
         if (log.isDebugEnabled()) {
@@ -107,7 +107,7 @@ public class TransactionCountHandler extends AbstractExtendedSynapseHandler {
             return true;
         }
         int tCount = TransactionCountingLogic.handleRequestInFlow(messageContext);
-        if(tCount > 0) {
+        if (tCount > 0) {
             if (transactionAggregator != null && transactionAggregator.isEnabled()) {
                 transactionAggregator.addTransactions(tCount);
             }
@@ -129,7 +129,7 @@ public class TransactionCountHandler extends AbstractExtendedSynapseHandler {
             return true;
         }
         int tCount = TransactionCountingLogic.handleRequestOutFlow(messageContext);
-        if(tCount > 0) {
+        if (tCount > 0) {
             if (transactionAggregator != null && transactionAggregator.isEnabled()) {
                 transactionAggregator.addTransactions(tCount);
             }
@@ -143,7 +143,7 @@ public class TransactionCountHandler extends AbstractExtendedSynapseHandler {
             return true;
         }
         int tCount = TransactionCountingLogic.handleResponseInFlow(messageContext);
-        if(tCount > 0) {
+        if (tCount > 0) {
             if (transactionAggregator != null && transactionAggregator.isEnabled()) {
                 transactionAggregator.addTransactions(tCount);
             }
@@ -157,7 +157,7 @@ public class TransactionCountHandler extends AbstractExtendedSynapseHandler {
             return true;
         }
         int tCount = TransactionCountingLogic.handleResponseOutFlow(messageContext);
-        if(tCount > 0) {
+        if (tCount > 0) {
             if (transactionAggregator != null && transactionAggregator.isEnabled()) {
                 transactionAggregator.addTransactions(tCount);
             }

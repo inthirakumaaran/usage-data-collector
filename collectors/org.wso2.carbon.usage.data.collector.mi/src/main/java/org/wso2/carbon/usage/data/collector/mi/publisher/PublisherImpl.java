@@ -9,7 +9,7 @@
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an 
+ * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
@@ -40,7 +40,6 @@ import org.wso2.carbon.usage.data.collector.common.publisher.api.model.UsageCoun
 import org.wso2.carbon.usage.data.collector.common.receiver.Receiver;
 import org.wso2.carbon.usage.data.collector.mi.datasource.DataSourceProvider;
 import org.wso2.carbon.usage.data.collector.mi.internal.UsageDataCollectorDataHolder;
-import org.wso2.carbon.usage.data.collector.mi.publisher.PublisherConstants;
 
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
@@ -52,14 +51,18 @@ import javax.sql.DataSource;
  * Implementation of Publisher interface for MI.
  */
 @Component(
-    name = "org.wso2.carbon.usage.data.collector.mi.publisher",
-    service = Publisher.class,
-    immediate = true
+        name = "org.wso2.carbon.usage.data.collector.mi.publisher",
+        service = Publisher.class,
+        immediate = true
 )
 public class PublisherImpl implements Publisher {
-    
+
+    private static final Log log = LogFactory.getLog(PublisherImpl.class);
+    private static final org.apache.http.impl.client.CloseableHttpClient httpClient =
+            org.apache.http.impl.client.HttpClients.createDefault();
+    private static final Gson gson = new Gson();
     private volatile boolean isShuttingDown = false;
-    
+
     @Activate
     protected void activate() {
         if (log.isDebugEnabled()) {
@@ -69,10 +72,10 @@ public class PublisherImpl implements Publisher {
 
     @Deactivate
     protected void deactivate() {
-        
+
         // Set shutdown flag to prevent new operations
         isShuttingDown = true;
-        
+
         try {
             httpClient.close();
             if (log.isDebugEnabled()) {
@@ -103,11 +106,6 @@ public class PublisherImpl implements Publisher {
         UsageDataCollectorDataHolder.getInstance().setReceiver(null);
     }
 
-    private static final Log log = LogFactory.getLog(PublisherImpl.class);
-    private static final org.apache.http.impl.client.CloseableHttpClient httpClient =
-            org.apache.http.impl.client.HttpClients.createDefault();
-    private static final Gson gson = new Gson();
-
     @Override
     public DataSource getDataSource() throws PublisherException {
         try {
@@ -133,7 +131,7 @@ public class PublisherImpl implements Publisher {
         String endpoint = request.getEndpoint();
         return executeHttpRequest(request, endpoint, "external API");
     }
-    
+
     /**
      * This method identifies the request type based on the endpoint and data,
      * then delegates to the appropriate processor method.
@@ -146,11 +144,11 @@ public class PublisherImpl implements Publisher {
         try {
             String endpoint = request.getEndpoint();
             Object data = request.getData();
-            
+
             if (data == null) {
                 return ApiResponse.failure(400, "Request body is required");
             }
-            
+
             // Identify request type based on endpoint
             if (endpoint != null && endpoint.contains(PublisherConstants.USAGE_COUNT_ENDPOINT)) {
                 return processUsageCount(data);
@@ -171,7 +169,7 @@ public class PublisherImpl implements Publisher {
             throw new PublisherException(errorMsg, e);
         }
     }
-    
+
     /**
      * Processes UsageCount data through UsageDataProcessor.
      */
@@ -183,7 +181,7 @@ public class PublisherImpl implements Publisher {
             }
             return ApiResponse.failure(503, "Service is shutting down");
         }
-        
+
         try {
             UsageCount usageCount = convertToUsageCount(data);
             // Validate required fields
@@ -191,7 +189,7 @@ public class PublisherImpl implements Publisher {
             if (validationError != null) {
                 return ApiResponse.failure(400, validationError);
             }
-            
+
             // Get Receiver service from DataHolder
             Receiver receiver = UsageDataCollectorDataHolder.getInstance().getReceiver();
             if (receiver == null) {
@@ -200,7 +198,7 @@ public class PublisherImpl implements Publisher {
                 }
                 return ApiResponse.failure(503, "Receiver service not available");
             }
-            
+
             // Process using Receiver interface
             receiver.processUsageData(usageCount);
             return ApiResponse.success(201, "{\"message\":\"Record received successfully.\"}");
@@ -211,7 +209,7 @@ public class PublisherImpl implements Publisher {
             return ApiResponse.failure(500, "Internal server error: " + e.getMessage());
         }
     }
-    
+
     /**
      * Processes DeploymentInformation data through UsageDataProcessor.
      */
@@ -220,7 +218,7 @@ public class PublisherImpl implements Publisher {
         if (isShuttingDown) {
             return ApiResponse.failure(503, "Service is shutting down");
         }
-        
+
         try {
             DeploymentInformation deploymentInfo = convertToDeploymentInformation(data);
             // Validate required fields
@@ -228,7 +226,7 @@ public class PublisherImpl implements Publisher {
             if (validationError != null) {
                 return ApiResponse.failure(400, validationError);
             }
-            
+
             // Get Receiver service from DataHolder
             Receiver receiver = UsageDataCollectorDataHolder.getInstance().getReceiver();
             if (receiver == null) {
@@ -237,7 +235,7 @@ public class PublisherImpl implements Publisher {
                 }
                 return ApiResponse.failure(503, "Receiver service not available");
             }
-            
+
             // Process using Receiver interface
             receiver.processDeploymentInformationData(deploymentInfo);
             return ApiResponse.success(201, "{\"message\":\"Record received successfully.\"}");
@@ -248,7 +246,7 @@ public class PublisherImpl implements Publisher {
             return ApiResponse.failure(500, "Internal server error: " + e.getMessage());
         }
     }
-    
+
     /**
      * Processes MetaInformation data through UsageDataProcessor.
      */
@@ -257,7 +255,7 @@ public class PublisherImpl implements Publisher {
         if (isShuttingDown) {
             return ApiResponse.failure(503, "Service is shutting down");
         }
-        
+
         try {
             MetaInformation metaInfo = convertToMetaInformation(data);
             // Validate required fields
@@ -265,7 +263,7 @@ public class PublisherImpl implements Publisher {
             if (validationError != null) {
                 return ApiResponse.failure(400, validationError);
             }
-            
+
             // Get Receiver service from DataHolder
             Receiver receiver = UsageDataCollectorDataHolder.getInstance().getReceiver();
             if (receiver == null) {
@@ -274,7 +272,7 @@ public class PublisherImpl implements Publisher {
                 }
                 return ApiResponse.failure(503, "Receiver service not available");
             }
-            
+
             // Process using Receiver interface
             receiver.processMetaInformationData(metaInfo);
             return ApiResponse.success(201, "{\"message\":\"Record received successfully.\"}");
@@ -285,7 +283,7 @@ public class PublisherImpl implements Publisher {
             return ApiResponse.failure(500, "Internal server error: " + e.getMessage());
         }
     }
-    
+
     /**
      * Converts generic data object to UsageCount.
      */
@@ -296,7 +294,7 @@ public class PublisherImpl implements Publisher {
         String json = gson.toJson(data);
         return gson.fromJson(json, UsageCount.class);
     }
-    
+
     /**
      * Converts generic data object to DeploymentInformation.
      */
@@ -307,7 +305,7 @@ public class PublisherImpl implements Publisher {
         String json = gson.toJson(data);
         return gson.fromJson(json, DeploymentInformation.class);
     }
-    
+
     /**
      * Converts generic data object to MetaInformation.
      */
@@ -318,7 +316,7 @@ public class PublisherImpl implements Publisher {
         String json = gson.toJson(data);
         return gson.fromJson(json, MetaInformation.class);
     }
-    
+
     /**
      * Validates UsageCount fields (same validation as HTTP API).
      */
@@ -334,7 +332,7 @@ public class PublisherImpl implements Publisher {
         }
         return null;
     }
-    
+
     /**
      * Validates DeploymentInformation fields (same validation as HTTP API).
      */
@@ -348,13 +346,13 @@ public class PublisherImpl implements Publisher {
         if (deploymentInfo.getDeploymentInfo() == null) {
             return "deploymentInfo is required";
         }
-        if (deploymentInfo.getDeploymentInfoHash() == null || 
-            deploymentInfo.getDeploymentInfoHash().trim().isEmpty()) {
+        if (deploymentInfo.getDeploymentInfoHash() == null ||
+                deploymentInfo.getDeploymentInfoHash().trim().isEmpty()) {
             return "deploymentInfoHash is required";
         }
         return null;
     }
-    
+
     /**
      * Validates MetaInformation fields (same validation as HTTP API).
      */
@@ -367,7 +365,7 @@ public class PublisherImpl implements Publisher {
         }
         return null;
     }
-    
+
     /**
      * Executes an HTTP POST request to the given endpoint with the provided ApiRequest data.
      *
@@ -384,14 +382,14 @@ public class PublisherImpl implements Publisher {
         if (reqTimeout > 0) {
             timeoutMs = reqTimeout;
         }
-        
+
         // Determine content type from headers, default to application/json
         Map<String, String> requestHeaders = request.getHeaders();
         String contentType = requestHeaders != null ? requestHeaders.get("Content-Type") : null;
         if (contentType == null) {
             contentType = "application/json";
         }
-        
+
         // Prepare request body based on content type
         String requestBody;
         if (request.getData() instanceof String) {
@@ -410,8 +408,8 @@ public class PublisherImpl implements Publisher {
                         }
                         // Java 8 compatible - uses String instead of Charset
                         sb.append(java.net.URLEncoder.encode(entry.getKey(), "UTF-8"))
-                          .append("=")
-                          .append(java.net.URLEncoder.encode(String.valueOf(entry.getValue()), "UTF-8"));
+                                .append("=")
+                                .append(java.net.URLEncoder.encode(String.valueOf(entry.getValue()), "UTF-8"));
                     }
                 } catch (java.io.UnsupportedEncodingException e) {
                     throw new PublisherException("UTF-8 encoding not supported", e);
@@ -424,7 +422,7 @@ public class PublisherImpl implements Publisher {
             // Default: convert to JSON
             requestBody = request.getData() != null ? gson.toJson(request.getData()) : "{}";
         }
-        
+
         org.apache.http.client.config.RequestConfig requestConfig = org.apache.http.client.config.RequestConfig.custom()
                 .setConnectTimeout(timeoutMs)
                 .setConnectionRequestTimeout(timeoutMs)
@@ -436,7 +434,7 @@ public class PublisherImpl implements Publisher {
             httpPost.setHeader("Content-Type", contentType);
             httpPost.setHeader("Accept", "application/json");
             httpPost.setHeader("User-Agent", "WSO2-Usage-Data-Collector/1.0");
-            
+
             // Add any additional headers from the request
             if (requestHeaders != null) {
                 for (Map.Entry<String, String> header : requestHeaders.entrySet()) {
@@ -445,7 +443,7 @@ public class PublisherImpl implements Publisher {
                     }
                 }
             }
-            
+
             httpPost.setEntity(new StringEntity(requestBody, StandardCharsets.UTF_8));
             try (org.apache.http.client.methods.CloseableHttpResponse response = httpClient.execute(httpPost)) {
                 int statusCode = response.getStatusLine().getStatusCode();

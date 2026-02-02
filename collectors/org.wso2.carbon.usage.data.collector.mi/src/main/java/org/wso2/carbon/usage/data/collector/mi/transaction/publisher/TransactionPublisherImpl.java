@@ -35,9 +35,9 @@ import org.wso2.carbon.usage.data.collector.mi.transaction.record.TransactionRep
  * Transaction Report Publisher implementation.
  */
 @Component(
-    name = "org.wso2.carbon.usage.data.collector.mi.transaction.publisher",
-    service = TransactionPublisher.class,
-    immediate = true
+        name = "org.wso2.carbon.usage.data.collector.mi.transaction.publisher",
+        service = TransactionPublisher.class,
+        immediate = true
 )
 public class TransactionPublisherImpl implements TransactionPublisher {
 
@@ -59,7 +59,8 @@ public class TransactionPublisherImpl implements TransactionPublisher {
         }
     }
 
-    private org.wso2.carbon.usage.data.collector.common.publisher.api.model.ApiRequest createApiRequestFromReport(TransactionReport report) {
+    private org.wso2.carbon.usage.data.collector.common.publisher.api.model.ApiRequest createApiRequestFromReport(
+            TransactionReport report) {
         TransactionUsageData usageData = new TransactionUsageData();
         usageData.setNodeId(MetaInfoHolder.getNodeId());
         usageData.setProduct(MetaInfoHolder.getProduct());
@@ -71,42 +72,6 @@ public class TransactionPublisherImpl implements TransactionPublisher {
                 .withEndpoint("deployment-usage-stats")
                 .withData(usageData)
                 .build();
-    }
-
-    private static class TransactionUsageData extends org.wso2.carbon.usage.data.collector.common.publisher.api.model.UsageData {
-        private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-        private String nodeId;
-        private String product;
-        private long count;
-        private String type;
-
-        public void setNodeId(String nodeId) {
-            this.nodeId = nodeId;
-        }
-        public void setProduct(String product) {
-            this.product = product;
-        }
-        public void setCount(long count) {
-            this.count = count;
-        }
-        public void setType(String type) {
-            this.type = type;
-        }
-
-        @Override
-        public String toJson() {
-            try {
-                java.util.Map<String, Object> map = new java.util.HashMap<>();
-                map.put("nodeId", nodeId);
-                map.put("product", product);
-                map.put("count", count);
-                map.put("type", type);
-                map.put("createdTime", createdTime);
-                return OBJECT_MAPPER.writeValueAsString(map);
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to serialize TransactionUsageData to JSON", e);
-            }
-        }
     }
 
     @Reference(
@@ -153,8 +118,8 @@ public class TransactionPublisherImpl implements TransactionPublisher {
         }
 
         try {
-            org.wso2.carbon.usage.data.collector.common.publisher.api.model.ApiRequest request = 
-                createApiRequestFromReport(report);
+            org.wso2.carbon.usage.data.collector.common.publisher.api.model.ApiRequest request =
+                    createApiRequestFromReport(report);
             org.wso2.carbon.usage.data.collector.common.publisher.api.model.ApiResponse response =
                     currentPublisher.callReceiverApi(request);
             if (response != null && response.isSuccess()) {
@@ -163,7 +128,8 @@ public class TransactionPublisherImpl implements TransactionPublisher {
                 int status = response != null ? response.getStatusCode() : -1;
                 String body = response != null ? response.getResponseBody() : "null";
                 if (log.isDebugEnabled()) {
-                    log.debug("TransactionReportPublisher: Failed to publish transaction report. Status: " + status + ", Body: " + body);
+                    log.debug("TransactionReportPublisher: Failed to publish transaction report. Status: " + status +
+                            ", Body: " + body);
                 }
                 return false;
             }
@@ -172,6 +138,46 @@ public class TransactionPublisherImpl implements TransactionPublisher {
                 log.debug("TransactionReportPublisher: Error while publishing transaction report via OSGi service", e);
             }
             return false;
+        }
+    }
+
+    private static class TransactionUsageData
+            extends org.wso2.carbon.usage.data.collector.common.publisher.api.model.UsageData {
+        private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+        private String nodeId;
+        private String product;
+        private long count;
+        private String type;
+
+        public void setNodeId(String nodeId) {
+            this.nodeId = nodeId;
+        }
+
+        public void setProduct(String product) {
+            this.product = product;
+        }
+
+        public void setCount(long count) {
+            this.count = count;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
+
+        @Override
+        public String toJson() {
+            try {
+                java.util.Map<String, Object> map = new java.util.HashMap<>();
+                map.put("nodeId", nodeId);
+                map.put("product", product);
+                map.put("count", count);
+                map.put("type", type);
+                map.put("createdTime", createdTime);
+                return OBJECT_MAPPER.writeValueAsString(map);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to serialize TransactionUsageData to JSON", e);
+            }
         }
     }
 

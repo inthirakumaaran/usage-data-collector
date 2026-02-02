@@ -33,8 +33,8 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import org.wso2.carbon.usage.data.collector.mi.transaction.publisher.TransactionPublisher;
 
 import static org.wso2.carbon.usage.data.collector.mi.transaction.counter.TransactionCounterConstants.COMPONENT_NAME;
-import static org.wso2.carbon.usage.data.collector.mi.transaction.counter.TransactionCounterConstants.HANDLER_NAME_PROPERTY;
 import static org.wso2.carbon.usage.data.collector.mi.transaction.counter.TransactionCounterConstants.HANDLER_ENABLED_PROPERTY;
+import static org.wso2.carbon.usage.data.collector.mi.transaction.counter.TransactionCounterConstants.HANDLER_NAME_PROPERTY;
 import static org.wso2.carbon.usage.data.collector.mi.transaction.counter.TransactionCounterConstants.TRANSACTION_PUBLISHER_REFERENCE;
 
 /**
@@ -54,27 +54,27 @@ import static org.wso2.carbon.usage.data.collector.mi.transaction.counter.Transa
 public class TransactionCountHandlerComponent extends AbstractExtendedSynapseHandler {
 
     private static final Log log = LogFactory.getLog(TransactionCountHandlerComponent.class);
-    
+
     private TransactionCountHandler handler;
     private TransactionPublisher transactionPublisher;
 
     @Activate
     protected void activate() {
         try {
-            
+
             // Create the handler instance
             handler = new TransactionCountHandler();
-            
+
             // Register the publisher if available
             if (transactionPublisher != null) {
                 handler.setPublisher(transactionPublisher);
                 if (log.isDebugEnabled()) {
-                log.debug("TransactionCountHandler activated successfully");
-            }
+                    log.debug("TransactionCountHandler activated successfully");
+                }
             } else {
                 if (log.isDebugEnabled()) {
                     log.debug("TransactionPublisher not available during activation. " +
-                        "Handler will be initialized when publisher becomes available.");
+                            "Handler will be initialized when publisher becomes available.");
                 }
             }
         } catch (Exception e) {
@@ -91,7 +91,7 @@ public class TransactionCountHandlerComponent extends AbstractExtendedSynapseHan
             if (transactionPublisher != null && handler != null) {
                 handler.unsetPublisher(transactionPublisher);
             }
-            
+
             handler = null;
             if (log.isDebugEnabled()) {
                 log.debug("TransactionCountHandler deactivated successfully");
@@ -105,7 +105,7 @@ public class TransactionCountHandlerComponent extends AbstractExtendedSynapseHan
 
     /**
      * Binds the TransactionPublisher service when it becomes available.
-     * 
+     *
      * @param publisher the TransactionPublisher service
      */
     @Reference(
@@ -121,7 +121,7 @@ public class TransactionCountHandlerComponent extends AbstractExtendedSynapseHan
                 log.debug("TransactionPublisher service successfully bounded");
             }
             this.transactionPublisher = publisher;
-            
+
             // If handler is already created, register it with the publisher
             if (handler != null) {
                 handler.setPublisher(publisher);
@@ -138,7 +138,7 @@ public class TransactionCountHandlerComponent extends AbstractExtendedSynapseHan
 
     /**
      * Unbinds the TransactionPublisher service when it becomes unavailable.
-     * 
+     *
      * @param publisher the TransactionPublisher service
      */
     protected void unsetTransactionPublisher(TransactionPublisher publisher) {
@@ -149,7 +149,7 @@ public class TransactionCountHandlerComponent extends AbstractExtendedSynapseHan
                 }
                 this.transactionPublisher = null;
             }
-            
+
         } catch (Exception e) {
             if (log.isDebugEnabled()) {
                 log.debug("Error unbinding TransactionPublisher from TransactionCountHandler", e);

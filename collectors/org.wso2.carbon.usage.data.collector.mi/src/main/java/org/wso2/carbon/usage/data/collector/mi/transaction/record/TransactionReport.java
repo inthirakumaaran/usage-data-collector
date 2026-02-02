@@ -23,6 +23,10 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
+/**
+ * Represents a transaction report containing transaction count and metadata.
+ * Used to publish transaction data to the usage data collector receiver.
+ */
 public class TransactionReport {
 
     private static final DateTimeFormatter ISO_FORMATTER = DateTimeFormatter
