@@ -9,7 +9,7 @@
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an 
+ * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
@@ -22,18 +22,18 @@ package org.wso2.carbon.usage.data.collector.mi.publisher;
  * Constants for Publisher implementation.
  */
 public class PublisherConstants {
-    
+
     // DataSource configuration
     public static final String DATASOURCE_NAME = "consumptiondb";
-    
+
     // Timeout configuration
     public static final int DEFAULT_TIMEOUT_MS = 5000;
-    
+
     // Endpoint path constants for identifying request type
     public static final String USAGE_COUNT_ENDPOINT = "deployment-usage-stats";
     public static final String DEPLOYMENT_INFO_ENDPOINT = "deployment-information";
     public static final String META_INFO_ENDPOINT = "meta-information";
-    
+
     private PublisherConstants() {
         // Private constructor to prevent instantiation
     }

@@ -43,7 +43,7 @@ public class TransactionCountingLogic {
                 String transport = axis2MessageContext.getIncomingTransportName();
                 if (transport != null &&
                         (transport.equals(TransactionCounterConstants.TRANSPORT_WS) ||
-                        transport.equals(TransactionCounterConstants.TRANSPORT_WSS))) {
+                                transport.equals(TransactionCounterConstants.TRANSPORT_WSS))) {
                     return 1;
                 }
             }

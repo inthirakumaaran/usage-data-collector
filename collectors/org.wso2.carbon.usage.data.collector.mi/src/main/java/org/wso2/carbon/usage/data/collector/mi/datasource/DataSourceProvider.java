@@ -34,14 +34,15 @@ import javax.sql.DataSource;
 public class DataSourceProvider {
 
     private static final Log log = LogFactory.getLog(DataSourceProvider.class);
-    private DataSource dataSource;
+    private static final int MAX_RETRIES = 3;
+    private static final long RETRY_DELAY_MS = 60 * 1000; // 1 minute delay
     private static volatile DataSourceProvider instance;
+    private DataSource dataSource;
     private String dataSourceName;
     private boolean initialized = false;
-    private static final int MAX_RETRIES = 3;
-    private static final long RETRY_DELAY_MS = 60*1000; // 1 minute delay
 
-    private DataSourceProvider() {}
+    private DataSourceProvider() {
+    }
 
     public static DataSourceProvider getInstance() {
         if (instance == null) {
@@ -61,11 +62,11 @@ public class DataSourceProvider {
         if (dataSource == null) {
             dataSource = lookupDataSource();
             if (dataSource == null) {
-                if(log.isDebugEnabled()) {
+                if (log.isDebugEnabled()) {
                     log.debug("DataSource '" + dataSourceName + "' not available yet. Will retry on next access.");
                 }
             } else {
-                if(log.isDebugEnabled()) {
+                if (log.isDebugEnabled()) {
                     log.debug("DataSource '" + dataSourceName + "' initialized successfully");
                 }
             }
@@ -87,8 +88,9 @@ public class DataSourceProvider {
                     synchronized (this) {
                         if (dataSource == null) {
                             dataSource = ds;
-                            if(log.isDebugEnabled()) {
-                                log.debug("DataSource '" + dataSourceName + "' successfully loaded on attempt " + (attempt + 1));
+                            if (log.isDebugEnabled()) {
+                                log.debug("DataSource '" + dataSourceName + "' successfully loaded on attempt " +
+                                        (attempt + 1));
                             }
                         }
                     }
@@ -109,8 +111,9 @@ public class DataSourceProvider {
             }
 
             if (dataSource == null) {
-                throw new SQLException("DataSource '" + dataSourceName + "' not found after " + MAX_RETRIES + " attempts. " +
-                        "Please ensure the DataSource is properly configured in deployment.toml");
+                throw new SQLException(
+                        "DataSource '" + dataSourceName + "' not found after " + MAX_RETRIES + " attempts. " +
+                                "Please ensure the DataSource is properly configured in deployment.toml");
             }
         }
         return dataSource;
@@ -180,7 +183,7 @@ public class DataSourceProvider {
                 }
             } else {
                 if (log.isDebugEnabled()) {
-                log.error("DSObject is null for DataSource: " + dataSourceName);
+                    log.error("DSObject is null for DataSource: " + dataSourceName);
                 }
             }
 
