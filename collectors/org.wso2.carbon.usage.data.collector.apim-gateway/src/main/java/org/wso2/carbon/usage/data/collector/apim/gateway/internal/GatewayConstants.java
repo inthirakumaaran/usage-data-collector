@@ -28,7 +28,7 @@ public class GatewayConstants {
     public static final String TRANSACTION_TYPE = "TRANSACTION";
 
     // Endpoints
-    public static final String USAGE_COUNT_ENDPOINT = "receiver/usage-counts";
+    public static final String USAGE_COUNT_ENDPOINT = "usage-data-receiver/usage-counts";
 
     // Shutdown timeout
     public static final long SHUTDOWN_TIMEOUT_SECONDS = 60;

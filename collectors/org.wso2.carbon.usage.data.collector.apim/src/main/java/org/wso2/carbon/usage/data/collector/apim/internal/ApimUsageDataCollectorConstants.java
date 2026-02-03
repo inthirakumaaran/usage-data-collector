@@ -38,7 +38,7 @@ public class ApimUsageDataCollectorConstants {
     public static final String MCP_API_COUNT_TYPE = "MCP_API_COUNT";
 
     // Endpoints
-    public static final String USAGE_COUNT_ENDPOINT = "receiver/usage-counts";
+    public static final String USAGE_COUNT_ENDPOINT = "usage-data-receiver/usage-counts";
 
     // Shutdown timeout
     public static final long SHUTDOWN_TIMEOUT_SECONDS = 60;
