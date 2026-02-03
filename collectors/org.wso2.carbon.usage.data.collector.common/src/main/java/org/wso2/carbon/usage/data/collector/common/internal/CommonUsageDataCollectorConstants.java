@@ -24,8 +24,8 @@ package org.wso2.carbon.usage.data.collector.common.internal;
 public class CommonUsageDataCollectorConstants {
 
     // API Endpoints
-    public static final String DEPLOYMENT_INFO_ENDPOINT = "receiver/deployment-information";
-    public static final String META_INFO_ENDPOINT = "receiver/meta-information";
+    public static final String DEPLOYMENT_INFO_ENDPOINT = "usage-data-receiver/deployment-information";
+    public static final String META_INFO_ENDPOINT = "usage-data-receiver/meta-information";
 
     private CommonUsageDataCollectorConstants() {
         // Private constructor to prevent instantiation
