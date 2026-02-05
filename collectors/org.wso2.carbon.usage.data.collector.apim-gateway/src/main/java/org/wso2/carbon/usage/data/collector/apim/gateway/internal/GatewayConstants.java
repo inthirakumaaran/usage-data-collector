@@ -25,7 +25,7 @@ package org.wso2.carbon.usage.data.collector.apim.gateway.internal;
 public class GatewayConstants {
 
     // Usage count types
-    public static final String TRANSACTION_TYPE = "TRANSACTION";
+    public static final String TRANSACTION_TYPE = "TRANSACTION_COUNT";
 
     // Endpoints
     public static final String USAGE_COUNT_ENDPOINT = "usage-data-receiver/usage-counts";
