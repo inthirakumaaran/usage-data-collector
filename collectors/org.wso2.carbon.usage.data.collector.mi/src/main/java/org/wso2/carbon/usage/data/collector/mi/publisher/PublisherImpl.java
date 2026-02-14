@@ -115,7 +115,7 @@ public class PublisherImpl implements Publisher {
             }
             return provider.getDataSource();
         } catch (SQLException e) {
-            log.error("Product consumption datasource is not found. Please verify that it has been configured correctly.");
+            log.warn("Product consumption datasource is not found. Please verify that it has been configured correctly.");
             throw new PublisherException(e.getMessage(), e);
         }
     }
