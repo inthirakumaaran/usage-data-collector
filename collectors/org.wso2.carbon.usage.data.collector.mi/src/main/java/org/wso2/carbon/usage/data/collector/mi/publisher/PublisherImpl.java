@@ -115,11 +115,8 @@ public class PublisherImpl implements Publisher {
             }
             return provider.getDataSource();
         } catch (SQLException e) {
-            String errorMsg = "Failed to get datasource: " + PublisherConstants.DATASOURCE_NAME;
-            if (log.isDebugEnabled()) {
-                log.error(errorMsg, e);
-            }
-            throw new PublisherException(errorMsg, e);
+            log.warn("Product consumption datasource is not found. Please verify that it has been configured correctly.");
+            throw new PublisherException(e.getMessage(), e);
         }
     }
 
