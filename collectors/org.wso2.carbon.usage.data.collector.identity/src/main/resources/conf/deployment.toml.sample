@@ -1,0 +1,77 @@
+# ============================================================================
+# Usage Data Collector - usage metering configuration (sample).
+#
+# The Identity Server usage collector counts MAU, M2M-token and agent activity
+# from IS events, accumulates them in memory on each node, and publishes each
+# node's counts through the usage-data receiver on a schedule. Nothing is
+# persisted to a bespoke usage-count table; only per-user MAU tracking rows are
+# kept in IDN_MAU_COUNT for cross-node distinct-user de-duplication.
+#
+# ── 1. Event handlers (counting) ────────────────────────────────────────────
+# Register the handlers so IS delivers the relevant events. Add these blocks to
+# <IS_HOME>/repository/conf/deployment.toml:
+
+[[event_handler]]
+name          = "mauLoginEventHandler"
+subscriptions = ["AUTHENTICATION_SUCCESS"]
+
+[event_handler.properties]
+flushInterval      = 15        # how often to flush the in-memory MAU cache to IDN_MAU_COUNT
+flushIntervalUnit  = "MINUTES" # MINUTES | HOURS | DAYS
+cacheRetentionDays = 40        # days to keep per-user rows in the in-memory cache
+dbRetentionDays    = 60        # days to keep per-user rows in IDN_MAU_COUNT
+
+[[event_handler]]
+name          = "m2mTokenUsageHandler"
+subscriptions = ["POST_ISSUE_ACCESS_TOKEN_V2"]
+
+[[event_handler]]
+name          = "agentUsageHandler"
+subscriptions = ["AUTHENTICATION_SUCCESS", "POST_ISSUE_ACCESS_TOKEN_V2"]
+
+[event_handler.properties]
+userStoreDomain          = "AGENT" # userstore domain where agent identities reside
+trackLogin               = true    # AGENT userstore logins           -> AGENT_LOGIN
+trackOBOTokenExchange    = true    # ACTOR_TOKEN_PRESENT=true tokens   -> AGENT_TOKEN / AGENT_REFRESH_TOKEN
+trackDirectTokenExchange = true    # AGENT userstore, no actor token   -> AGENT_DIRECT_TOKEN / AGENT_DIRECT_REFRESH_TOKEN
+
+# ── 2. Publish schedule ─────────────────────────────────────────────────────
+# Controls how often each node drains its in-memory counters and publishes them.
+# M2M and agent counts are cumulative deltas published on every cycle. MAU is a
+# monthly metric: the previous (completed) month's final distinct-user count is
+# published once, on the first cycle of the new month.
+#
+# M2M and agent counts publish on every cycle, so the interval is their publish
+# frequency; MAU publishes once per month regardless (see mau_interval_publish).
+# Every key is optional; omitted keys keep the bundle default:
+#   hour                 = 0     (daily run hour, 0-23; used only in daily mode)
+#   minute               = 30    (daily run minute, 0-59; used only in daily mode)
+#   interval_seconds     = 3600  (default: publish hourly; set 0 for daily mode)
+#   mau_interval_publish = false (non-production only - see below)
+#
+#   - interval_seconds > 0 overrides the daily schedule and runs at that fixed
+#     cadence (default 3600 = hourly). Set it to 0 to use the daily hour/minute schedule.
+#   - mau_interval_publish = true publishes the CURRENT month's running MAU count on
+#     every cycle so it can be observed without waiting for month-end. Do NOT enable
+#     in production: the receiver would aggregate the repeated running counts into an
+#     inflated total. Leave false/omitted so MAU is published once per month.
+#   - Changes require a server restart; properties are read once at bundle start.
+
+# Production defaults (hourly M2M/agent, monthly MAU) apply with no block at all.
+# Testing example — publish every 5 min and emit the running MAU count each cycle:
+# [usage_tracking.usage_count_collector]
+# interval_seconds = 300
+# mau_interval_publish = true
+
+# Daily example (publish at 00:30, MAU still monthly):
+# [usage_tracking.usage_count_collector]
+# hour = 0
+# minute = 30
+# interval_seconds = 0
+
+# ── 3. Datasource (optional) ────────────────────────────────────────────────
+# IDN_MAU_COUNT is accessed via the datasource named by UsageTracking.DataSourceName
+# (a JNDI name defined in master-datasources.xml). If omitted, the IS identity DB
+# is used. Set it once at the [identity] level so the whole feature shares it.
+# [identity]
+# "UsageTracking.DataSourceName" = "jdbc/WSO2UsageTrackingDB"
