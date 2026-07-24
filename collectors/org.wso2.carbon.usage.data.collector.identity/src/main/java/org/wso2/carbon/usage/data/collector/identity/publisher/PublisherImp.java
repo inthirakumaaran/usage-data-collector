@@ -20,7 +20,6 @@ package org.wso2.carbon.usage.data.collector.identity.publisher;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.wso2.carbon.identity.core.util.IdentityDatabaseUtil;
 import org.wso2.carbon.usage.data.collector.common.publisher.api.Publisher;
 import org.wso2.carbon.usage.data.collector.common.publisher.api.model.ApiRequest;
 import org.wso2.carbon.usage.data.collector.common.publisher.api.model.ApiResponse;
@@ -29,6 +28,7 @@ import org.wso2.carbon.usage.data.collector.common.publisher.api.model.MetaInfor
 import org.wso2.carbon.usage.data.collector.common.publisher.api.model.UsageCount;
 import org.wso2.carbon.usage.data.collector.common.receiver.Receiver;
 import org.wso2.carbon.usage.data.collector.identity.internal.UsageDataCollectorDataHolder;
+import org.wso2.carbon.usage.data.collector.identity.util.UsageDataSourceProvider;
 
 import java.io.IOException;
 
@@ -44,7 +44,7 @@ public class PublisherImp implements Publisher {
     @Override
     public DataSource getDataSource() {
 
-        return IdentityDatabaseUtil.getDataSource();
+        return UsageDataSourceProvider.getDataSource();
     }
 
     @Override

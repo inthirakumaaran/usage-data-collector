@@ -33,15 +33,32 @@ import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
 import org.wso2.carbon.core.clustering.api.CoordinatedActivity;
+import org.wso2.carbon.identity.event.handler.AbstractEventHandler;
 import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
+import org.wso2.carbon.usage.data.collector.identity.UsageCountCollectorScheduler;
+import org.wso2.carbon.usage.data.collector.identity.UsageCountDataCollector;
 import org.wso2.carbon.usage.data.collector.identity.UsageDataCollector;
 import org.wso2.carbon.usage.data.collector.identity.UsageDataCollectorScheduler;
 import org.wso2.carbon.usage.data.collector.identity.UsageDataCollectorWithoutB2B;
+import org.wso2.carbon.usage.data.collector.identity.metering.agent.AgentEventHandler;
+import org.wso2.carbon.usage.data.collector.identity.metering.agent.AgentManagementListener;
+import org.wso2.carbon.usage.data.collector.identity.metering.common.CountType;
+import org.wso2.carbon.usage.data.collector.identity.metering.common.cache.GenericCounterCache;
+import org.wso2.carbon.usage.data.collector.identity.metering.m2m.M2MTokenEventHandler;
+import org.wso2.carbon.usage.data.collector.identity.metering.mau.MAUDataAccessObject;
+import org.wso2.carbon.usage.data.collector.identity.metering.mau.MAUFlushTask;
+import org.wso2.carbon.usage.data.collector.identity.metering.mau.MAULoginEventHandler;
 import org.wso2.carbon.usage.data.collector.identity.publisher.PublisherImp;
 import org.wso2.carbon.usage.data.collector.identity.util.ClusteringUtil;
+import org.wso2.carbon.user.core.listener.UserOperationEventListener;
 import org.wso2.carbon.user.core.service.RealmService;
 import org.wso2.carbon.utils.ConfigurationContextService;
 
+import java.util.Dictionary;
+import java.util.EnumMap;
+import java.util.Hashtable;
+import java.util.Map;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -50,6 +67,15 @@ import java.util.function.Consumer;
 
 /**
  * Manages the lifecycle and scheduling of usage data collection.
+ * <p>
+ * Two independent pipelines are wired here:
+ * <ul>
+ *   <li><b>System-statistics collector</b> (users / organizations) — reads shared DB state and
+ *       runs on the cluster coordinator only.</li>
+ *   <li><b>Usage metering</b> (MAU / M2M / agent) — event handlers accumulate counts in memory on
+ *       <em>every</em> node and the usage-count collector publishes each node's counts through the
+ *       common receiver on its schedule. Registered only on IS 7.x+.</li>
+ * </ul>
  */
 @Component(
         name = "org.wso2.carbon.usage.data.collector.identity",
@@ -69,6 +95,11 @@ public class UsageDataCollectorServiceComponent {
     private BundleContext bundleContext;
     private ServiceRegistration<?> publisherServiceRegistration;
     private UsageDataCollectorScheduler schedulerNew;
+    private UsageCountCollectorScheduler usageCountScheduler;
+
+    // Usage-metering (event-driven counting) state, registered on every node.
+    private ScheduledExecutorService mauFlushScheduler;
+    private MAULoginEventHandler mauHandler;
 
     @Activate
     protected void activate(ComponentContext context) {
@@ -87,6 +118,13 @@ public class UsageDataCollectorServiceComponent {
             } else {
                 LOG.debug("Standalone setup detected. Usage data collectors starts immediately.");
                 runUsageCollectionTask();
+            }
+
+            // Usage metering runs on every node (counts are per-node, in-memory). Requires IS 7.x+.
+            if (UsageDataCollectorDataHolder.getInstance().getB2bSupportedISVersion()) {
+                initUsageMetering();
+            } else {
+                LOG.debug("IS version does not support usage metering handlers; skipping registration.");
             }
 
             // Register the publisher.
@@ -142,6 +180,31 @@ public class UsageDataCollectorServiceComponent {
                     LOG.debug("Error while stopping UsageDataCollectorScheduler", e);
                 }
             }
+        }
+
+        // Stop usage count collector scheduler
+        if (usageCountScheduler != null) {
+            try {
+                usageCountScheduler.stopScheduledTask();
+            } catch (RuntimeException e) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Error while stopping UsageCountCollectorScheduler", e);
+                }
+            }
+        }
+
+        // Stop MAU cache-flush pipeline.
+        if (mauHandler != null) {
+            try {
+                mauHandler.shutdown();
+            } catch (RuntimeException e) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Error while shutting down MAU handler", e);
+                }
+            }
+        }
+        if (mauFlushScheduler != null) {
+            mauFlushScheduler.shutdownNow();
         }
 
         if (publisherServiceRegistration != null) {
@@ -268,6 +331,10 @@ public class UsageDataCollectorServiceComponent {
         }
     }
 
+    /**
+     * Starts the system-statistics collector (users / organizations). Coordinator-gated in a cluster
+     * because it derives its counts from shared DB state.
+     */
     private void runUsageCollectionTask() {
 
         if (UsageDataCollectorDataHolder.getInstance().getB2bSupportedISVersion()) {
@@ -278,6 +345,72 @@ public class UsageDataCollectorServiceComponent {
             schedulerNew = new UsageDataCollectorScheduler(collectorWithoutB2B);
         }
         schedulerNew.startScheduledTask();
+    }
+
+    /**
+     * Wires the usage-metering pipeline on this node: registers the MAU / M2M / agent event handlers
+     * and the agent management listener, starts the MAU cache-flush scheduler, and starts the
+     * usage-count publish scheduler that drains the in-memory caches through the common receiver.
+     */
+    private void initUsageMetering() {
+
+        // M2M + agent counter caches, keyed by the count type they feed.
+        GenericCounterCache m2mCache = new GenericCounterCache();
+        GenericCounterCache agentLoginCache = new GenericCounterCache();
+        GenericCounterCache agentTokenCache = new GenericCounterCache();
+        GenericCounterCache agentRefreshTokenCache = new GenericCounterCache();
+        GenericCounterCache agentDirectTokenCache = new GenericCounterCache();
+        GenericCounterCache agentDirectRefreshTokenCache = new GenericCounterCache();
+        GenericCounterCache agentProvCache = new GenericCounterCache();
+        GenericCounterCache agentUpdCache = new GenericCounterCache();
+        GenericCounterCache agentDelCache = new GenericCounterCache();
+        GenericCounterCache agentStatusCache = new GenericCounterCache();
+
+        Map<CountType, GenericCounterCache> counterCaches = new EnumMap<>(CountType.class);
+        counterCaches.put(CountType.M2M_TOKEN, m2mCache);
+        counterCaches.put(CountType.AGENT_LOGIN, agentLoginCache);
+        counterCaches.put(CountType.AGENT_TOKEN, agentTokenCache);
+        counterCaches.put(CountType.AGENT_REFRESH_TOKEN, agentRefreshTokenCache);
+        counterCaches.put(CountType.AGENT_DIRECT_TOKEN, agentDirectTokenCache);
+        counterCaches.put(CountType.AGENT_DIRECT_REFRESH_TOKEN, agentDirectRefreshTokenCache);
+        counterCaches.put(CountType.AGENT_PROVISION, agentProvCache);
+        counterCaches.put(CountType.AGENT_UPDATE, agentUpdCache);
+        counterCaches.put(CountType.AGENT_DELETE, agentDelCache);
+        counterCaches.put(CountType.AGENT_STATUS_CHANGE, agentStatusCache);
+
+        // MAU pipeline: cache -> IDN_MAU_COUNT flush runs on every node; the flush scheduler is
+        // started inside MAULoginEventHandler.init() so the configured interval is applied.
+        MAUDataAccessObject mauDao = new MAUDataAccessObject();
+        mauFlushScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "IS-MAU-Flush-Thread");
+            t.setDaemon(true);
+            return t;
+        });
+        mauHandler = new MAULoginEventHandler(mauFlushScheduler, new MAUFlushTask(mauDao));
+
+        M2MTokenEventHandler m2mHandler = new M2MTokenEventHandler(m2mCache);
+        AgentEventHandler agentHandler = new AgentEventHandler(
+                agentLoginCache, agentTokenCache, agentRefreshTokenCache,
+                agentDirectTokenCache, agentDirectRefreshTokenCache);
+        AgentManagementListener agentMgmt = new AgentManagementListener(
+                agentProvCache, agentUpdCache, agentDelCache, agentStatusCache);
+
+        registerEventHandler(mauHandler, mauHandler.getName());
+        registerEventHandler(m2mHandler, m2mHandler.getName());
+        registerEventHandler(agentHandler, agentHandler.getName());
+        bundleContext.registerService(UserOperationEventListener.class.getName(), agentMgmt, null);
+        LOG.debug("Usage metering handlers registered (MAU, M2M, agent).");
+
+        UsageCountDataCollector collector = new UsageCountDataCollector(mauDao, counterCaches, new PublisherImp());
+        usageCountScheduler = new UsageCountCollectorScheduler(collector);
+        usageCountScheduler.startScheduledTask();
+    }
+
+    private void registerEventHandler(AbstractEventHandler handler, String name) {
+
+        Dictionary<String, Object> props = new Hashtable<>();
+        props.put("name", name);
+        bundleContext.registerService(AbstractEventHandler.class.getName(), handler, props);
     }
 
     /**

@@ -27,4 +27,21 @@ public class UsageCollectorConstants {
 
     public static final String USERNAME_CLAIM = "http://wso2.org/claims/username";
 
+    // JNDI name of the datasource holding IDN_MAU_COUNT (per-user MAU tracking rows).
+    // Omit/empty to fall back to the IS identity DB.
+    public static final String USAGE_TRACKING_DATASOURCE_NAME = "UsageTracking.DataSourceName";
+
+    // Usage count collector configuration properties in identity.xml.
+    public static final String USAGE_COUNT_COLLECTOR_HOUR = "UsageTracking.UsageCountCollector.Hour";
+    public static final String USAGE_COUNT_COLLECTOR_MINUTE = "UsageTracking.UsageCountCollector.Minute";
+    // When set to a positive value, the collector runs at this fixed interval instead of once daily.
+    // Intended for testing (e.g. 300 for every 5 minutes).
+    public static final String USAGE_COUNT_COLLECTOR_INTERVAL_SECONDS =
+            "UsageTracking.UsageCountCollector.IntervalSeconds";
+    // When true, MAU is published on every collection cycle (the current month's running distinct
+    // count) instead of once per month. Non-production only — the receiver would otherwise aggregate
+    // the repeated running counts into an inflated total. Defaults to false (monthly publish).
+    public static final String USAGE_COUNT_COLLECTOR_MAU_INTERVAL_PUBLISH =
+            "UsageTracking.UsageCountCollector.MauIntervalPublish";
+
 }
